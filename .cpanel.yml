@@ -4,4 +4,5 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home1/abitcons/public_html/abitcons_new/
     - /bin/mkdir -p $DEPLOYPATH
-    - /usr/bin/rsync -a --delete ./public/ $DEPLOYPATH
+    - /bin/rm -rf $DEPLOYPATH/*
+    - /bin/cp -a ./public/. $DEPLOYPATH
