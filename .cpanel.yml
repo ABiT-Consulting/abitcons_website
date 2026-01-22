@@ -1,8 +1,9 @@
 # cPanel Git deployment config
-# Deploy only the built static site from ./public to avoid overwriting server WP core.
+# Deploy the production build from ./dist
+# (Build locally with: npm run build)
 deployment:
   tasks:
     - export DEPLOYPATH=/home1/abitcons/public_html/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf $DEPLOYPATH/*
-    - /bin/cp -a ./public/. $DEPLOYPATH
+    - /bin/cp -a ./dist/. $DEPLOYPATH
