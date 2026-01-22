@@ -1,0 +1,7 @@
+# cPanel Git deployment config
+# Adjust DEPLOYPATH when you're ready to deploy live.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home1/abitcons/public_html/abitcons_new/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /usr/bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' ./ $DEPLOYPATH
