@@ -2,7 +2,7 @@
 # Deploy only the built static site from ./public to avoid overwriting server WP core.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home1/abitcons/public_html/abitcons_new/
+    - export DEPLOYPATH=/home1/abitcons/public_html/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rm -rf $DEPLOYPATH/*
     - /bin/cp -a ./public/. $DEPLOYPATH
