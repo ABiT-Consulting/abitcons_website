@@ -719,6 +719,13 @@ p {
   z-index: 1;
 }
 
+.product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
 .product-icon {
   display: inline-flex;
   align-items: center;
@@ -787,6 +794,63 @@ p {
   border-radius: 50%;
   background: var(--accent-2);
   box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+}
+
+.product-details {
+  margin-top: 0.2rem;
+  border-top: 1px dashed var(--line);
+  padding-top: 0.6rem;
+  position: relative;
+  z-index: 1;
+}
+
+.product-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--accent);
+  list-style: none;
+}
+
+.product-details summary::marker {
+  content: "";
+}
+
+.product-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-details[open] summary {
+  margin-bottom: 0.6rem;
+}
+
+.product-details-body {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.product-details .product-list {
+  margin-top: 0;
+}
+
+.product-details .product-meta {
+  margin-top: 0;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.product-cta {
+  justify-self: start;
+  margin-top: auto;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
 }
 
 .tag {
