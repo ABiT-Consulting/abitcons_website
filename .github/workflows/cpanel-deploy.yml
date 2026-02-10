@@ -1,0 +1,65 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cPanel deployment
+        shell: bash
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_PORT: ${{ secrets.CPANEL_PORT }}
+          CPANEL_USER: ${{ secrets.CPANEL_USER }}
+          CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
+          CPANEL_REPO_ROOT: ${{ secrets.CPANEL_REPO_ROOT }}
+          # Set to "true" only if your cPanel TLS cert/hostname causes curl SSL errors.
+          CPANEL_INSECURE: ${{ secrets.CPANEL_INSECURE }}
+        run: |
+          set -euo pipefail
+
+          : "${CPANEL_HOST:?Missing secret CPANEL_HOST (example: server.example.com)}"
+          : "${CPANEL_USER:?Missing secret CPANEL_USER (your cPanel username)}"
+          : "${CPANEL_TOKEN:?Missing secret CPANEL_TOKEN (cPanel API token)}"
+          : "${CPANEL_REPO_ROOT:?Missing secret CPANEL_REPO_ROOT (absolute path to the cPanel git repo)}"
+
+          port="${CPANEL_PORT:-2083}"
+          base="https://${CPANEL_HOST}:${port}"
+
+          curl_flags=(-sS -f)
+          if [[ "${CPANEL_INSECURE:-}" == "true" ]]; then
+            curl_flags+=(-k)
+          fi
+
+          echo "Triggering cPanel deploy for repo: ${CPANEL_REPO_ROOT}"
+          resp="$(mktemp)"
+
+          curl "${curl_flags[@]}" \
+            -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
+            --get \
+            --data-urlencode "repository_root=${CPANEL_REPO_ROOT}" \
+            "${base}/execute/VersionControlDeployment/create" \
+            -o "$resp"
+
+          if command -v jq >/dev/null 2>&1; then
+            jq . "$resp"
+          else
+            cat "$resp"
+          fi
+
+          # Fail the job if cPanel returned a non-success status.
+          if command -v jq >/dev/null 2>&1; then
+            jq -e '(.status? == 1) or (.result?.status? == 1) or (.result?.metadata?.result? == 1) or (.metadata?.result? == 1)' "$resp" >/dev/null
+          else
+            # Best-effort fallback: don't silently succeed if we couldn't parse JSON.
+            echo "jq is missing on the runner; cannot validate response. Failing safe."
+            exit 1
+          fi
+
+          echo "cPanel deploy: success"
+
