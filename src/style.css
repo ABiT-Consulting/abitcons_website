@@ -980,6 +980,28 @@ p {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+
+
+.captcha-slot {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.captcha-slot__label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.captcha-slot__box {
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  background: color-mix(in oklab, var(--surface) 80%, white);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
 .form-note {
   font-size: 0.85rem;
   color: var(--ink-soft);
