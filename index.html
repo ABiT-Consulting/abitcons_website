@@ -789,6 +789,12 @@
               Message
               <textarea name="message" rows="5" placeholder="Tell us about your project"></textarea>
             </label>
+            <div class="captcha-slot" aria-live="polite">
+              <p class="captcha-slot__label">Captcha verification</p>
+              <div class="captcha-slot__box" id="captcha-container" role="group" aria-label="Captcha widget placeholder">
+                Add your captcha widget here (Google reCAPTCHA or Cloudflare Turnstile).
+              </div>
+            </div>
             <button class="btn primary" type="submit">Send Message</button>
             <p class="form-note">Submitting opens your email client with the details.</p>
           </form>
