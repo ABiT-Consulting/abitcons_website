@@ -3,7 +3,8 @@
 # (Build locally with: npm run build)
 deployment:
   tasks:
-    - export DEPLOYPATH=/home1/abitcons/public_html/
-    - /bin/mkdir -p $DEPLOYPATH
-    - /bin/rm -rf $DEPLOYPATH/*
-    - /bin/cp -a ./dist/. $DEPLOYPATH
+    # Use the account home directory so this works even if the server uses /home, /home1, etc.
+    - export DEPLOYPATH="${HOME}/public_html/"
+    - /bin/mkdir -p "$DEPLOYPATH"
+    - /bin/rm -rf "$DEPLOYPATH"/*
+    - /bin/cp -a ./dist/. "$DEPLOYPATH"
