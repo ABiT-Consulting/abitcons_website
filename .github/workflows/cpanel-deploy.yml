@@ -104,6 +104,14 @@ jobs:
             local endpoint="$2"
             if ! jq -e '.result.status == 1' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
+
+              # Include a compact excerpt of the raw JSON response (useful when .result.* keys are missing).
+              raw="$(jq -c '.' "$file" 2>/dev/null || true)"
+              if [[ -n "${raw:-}" && "${raw:-null}" != "null" ]]; then
+                raw="${raw:0:1500}"
+                echo "::error::Response(excerpt): ${raw}"
+              fi
+
               # cPanel often returns useful context in metadata.reason even when errors/messages are empty.
               meta="$(jq -c '.result.metadata // {}' "$file" 2>/dev/null || true)"
               if [[ -n "${meta:-}" && "${meta:-null}" != "null" && "${meta:-}" != "{}" ]]; then
