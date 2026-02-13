@@ -102,7 +102,10 @@ jobs:
           jq_status_or_error() {
             local file="$1"
             local endpoint="$2"
-            if ! jq -e '.result.status == 1' "$file" >/dev/null 2>&1; then
+            # cPanel UAPI responses can be either wrapped:
+            #   {"apiversion":3,"module":"...","func":"...","result":{...}}
+            # or unwrapped (just the inner result object). Handle both.
+            if ! jq -e '((.result // .).status // 0) == 1' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
 
               # Include a compact excerpt of the raw JSON response (useful when .result.* keys are missing).
@@ -113,22 +116,22 @@ jobs:
               fi
 
               # cPanel often returns useful context in metadata.reason even when errors/messages are empty.
-              meta="$(jq -c '.result.metadata // {}' "$file" 2>/dev/null || true)"
+              meta="$(jq -c '(.result // .).metadata // {}' "$file" 2>/dev/null || true)"
               if [[ -n "${meta:-}" && "${meta:-null}" != "null" && "${meta:-}" != "{}" ]]; then
                 echo "::error::Metadata: ${meta}"
               fi
 
-              reason="$(jq -r '.result.metadata.reason // empty' "$file" 2>/dev/null || true)"
+              reason="$(jq -r '(.result // .).metadata.reason // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${reason:-}" && "${reason:-null}" != "null" ]]; then
                 echo "::error::Reason: ${reason}"
               fi
 
-              errors_json="$(jq -c '.result.errors // empty' "$file" 2>/dev/null || true)"
+              errors_json="$(jq -c '(.result // .).errors // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${errors_json:-}" && "${errors_json:-null}" != "null" && "${errors_json:-}" != "[]" ]]; then
                 echo "::error::Errors: ${errors_json}"
               fi
 
-              messages_json="$(jq -c '.result.messages // empty' "$file" 2>/dev/null || true)"
+              messages_json="$(jq -c '(.result // .).messages // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${messages_json:-}" && "${messages_json:-null}" != "null" && "${messages_json:-}" != "[]" ]]; then
                 echo "::error::Messages: ${messages_json}"
               fi
@@ -151,8 +154,8 @@ jobs:
           fi
 
           if (( did_update )); then
-            deployable="$(jq -r '.result.data.deployable // 0' "$update_resp")"
-            deployable_reason="$(jq -r '.result.data.deployable_reason // empty' "$update_resp")"
+            deployable="$(jq -r '(.result // .).data.deployable // 0' "$update_resp")"
+            deployable_reason="$(jq -r '(.result // .).data.deployable_reason // empty' "$update_resp")"
             if [[ "$deployable" != "1" ]]; then
               echo "::error::Repository is not deployable. ${deployable_reason}"
               exit 1
@@ -167,8 +170,8 @@ jobs:
           jq . "$create_resp"
           jq_status_or_error "$create_resp" "VersionControlDeployment/create"
 
-          deploy_id="$(jq -r '.result.data.deploy_id // empty' "$create_resp")"
-          log_path="$(jq -r '.result.data.log_path // empty' "$create_resp")"
+          deploy_id="$(jq -r '(.result // .).data.deploy_id // empty' "$create_resp")"
+          log_path="$(jq -r '(.result // .).data.log_path // empty' "$create_resp")"
           if [[ -z "$deploy_id" || "$deploy_id" == "null" ]]; then
             echo "Missing deploy_id in response."
             exit 1
@@ -185,7 +188,7 @@ jobs:
             jq_ok_or_dump "$retrieve_resp"
             jq_status_or_error "$retrieve_resp" "VersionControlDeployment/retrieve" || true
 
-            entry="$(jq -c --arg id "$deploy_id" '.result.data[]? | select((.deploy_id|tostring) == $id) | . // empty' "$retrieve_resp" | head -n1 || true)"
+            entry="$(jq -c --arg id "$deploy_id" '((.result // .).data[]? | select((.deploy_id|tostring) == $id) | .) // empty' "$retrieve_resp" | head -n1 || true)"
             if [[ -z "$entry" ]]; then
               echo "Waiting for deploy_id=${deploy_id} to appear..."
             else
@@ -218,7 +221,7 @@ jobs:
                     "to_charset=utf-8" || true
 
                   echo "---- cPanel deploy log (tail) ----"
-                  jq -r '.result.data.content // empty' "$log_resp" | tail -n 200 || true
+                  jq -r '(.result // .).data.content // empty' "$log_resp" | tail -n 200 || true
                   echo "---- end ----"
                 fi
 
