@@ -994,12 +994,18 @@ p {
 }
 
 .captcha-slot__box {
-  border: 1px dashed var(--line);
+  border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 0.9rem 1rem;
-  background: color-mix(in oklab, var(--surface) 80%, white);
-  color: var(--ink-soft);
-  font-size: 0.9rem;
+  padding: 0.75rem;
+  background: var(--input-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 78px;
+}
+
+.captcha-slot__box .cf-turnstile {
+  display: flex;
 }
 
 .form-note {

@@ -70,8 +70,10 @@
         ]
       }
     </script>
-    <script type="module" crossorigin src="/assets/index-Dap-qA0m.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B9OPCcEs.css">
+    <!-- Cloudflare Turnstile (replace data-sitekey in the form with your real site key). -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script type="module" crossorigin src="/assets/index-CKBDqL8_.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C3TI9Qx9.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -793,8 +795,9 @@
             </label>
             <div class="captcha-slot" aria-live="polite">
               <p class="captcha-slot__label">Captcha verification</p>
-              <div class="captcha-slot__box" id="captcha-container" role="group" aria-label="Captcha widget placeholder">
-                Add your captcha widget here (Google reCAPTCHA or Cloudflare Turnstile).
+              <div class="captcha-slot__box" id="captcha-container" role="group" aria-label="Captcha verification">
+                <!-- TODO: Replace this test key with your Cloudflare Turnstile site key. -->
+                <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA" data-theme="auto"></div>
               </div>
             </div>
             <button class="btn primary" type="submit">Send Message</button>
