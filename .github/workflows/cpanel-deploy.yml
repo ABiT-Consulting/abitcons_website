@@ -104,7 +104,12 @@ jobs:
             local endpoint="$2"
             if ! jq -e '.result.status == 1' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
-              jq -r '.result.errors[]? // empty' "$file" | sed -e 's/^/::error::/g' || true
+              reason="$(jq -r '.result.metadata.reason // empty' "$file" 2>/dev/null || true)"
+              if [[ -n "${reason:-}" && "${reason:-null}" != "null" ]]; then
+                echo "::error::Reason: ${reason}"
+              fi
+              jq -r '.result.errors[]? // empty' "$file" 2>/dev/null | sed -e 's/^/::error::/g' || true
+              jq -r '.result.messages[]? // empty' "$file" 2>/dev/null | sed -e 's/^/::error::/g' || true
               return 1
             fi
             return 0
@@ -117,13 +122,19 @@ jobs:
             "branch=${branch}"
           jq_ok_or_dump "$update_resp"
           jq . "$update_resp"
-          jq_status_or_error "$update_resp" "VersionControl/update"
+          did_update=1
+          if ! jq_status_or_error "$update_resp" "VersionControl/update"; then
+            # Some cPanel setups disallow this call; deployment may still work via VersionControlDeployment/create.
+            did_update=0
+          fi
 
-          deployable="$(jq -r '.result.data.deployable // 0' "$update_resp")"
-          deployable_reason="$(jq -r '.result.data.deployable_reason // empty' "$update_resp")"
-          if [[ "$deployable" != "1" ]]; then
-            echo "::error::Repository is not deployable. ${deployable_reason}"
-            exit 1
+          if (( did_update )); then
+            deployable="$(jq -r '.result.data.deployable // 0' "$update_resp")"
+            deployable_reason="$(jq -r '.result.data.deployable_reason // empty' "$update_resp")"
+            if [[ "$deployable" != "1" ]]; then
+              echo "::error::Repository is not deployable. ${deployable_reason}"
+              exit 1
+            fi
           fi
 
           echo "Triggering cPanel deploy for repo: ${CPANEL_REPO_ROOT}"
