@@ -18,6 +18,8 @@ jobs:
           CPANEL_USER: ${{ secrets.CPANEL_USER }}
           CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
           CPANEL_REPO_ROOT: ${{ secrets.CPANEL_REPO_ROOT }}
+          # Optional. Defaults to "main".
+          CPANEL_BRANCH: ${{ secrets.CPANEL_BRANCH }}
           # Set to "true" only if your cPanel TLS cert/hostname causes curl SSL errors.
           CPANEL_INSECURE: ${{ secrets.CPANEL_INSECURE }}
         run: |
@@ -29,27 +31,108 @@ jobs:
           : "${CPANEL_REPO_ROOT:?Missing secret CPANEL_REPO_ROOT (absolute path to the cPanel git repo)}"
 
           port="${CPANEL_PORT:-2083}"
+          branch="${CPANEL_BRANCH:-main}"
           base="https://${CPANEL_HOST}:${port}"
 
-          curl_flags=(-sS --fail-with-body)
+          auth_header="Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}"
+          curl_flags=(-sS)
           if [[ "${CPANEL_INSECURE:-}" == "true" ]]; then
             curl_flags+=(-k)
           fi
 
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required but not found on the runner."
+            exit 1
+          fi
+
+          cpanel_get() {
+            local endpoint="$1"; shift
+            local out="$1"; shift
+            local url="${base}/execute/${endpoint}"
+            local err
+            err="$(mktemp)"
+
+            local cmd=(curl "${curl_flags[@]}" -H "$auth_header" -H "Accept: application/json" --get)
+            local kv
+            for kv in "$@"; do
+              cmd+=(--data-urlencode "$kv")
+            done
+            cmd+=("$url" -o "$out" -w "%{http_code}")
+
+            set +e
+            local code
+            code="$("${cmd[@]}" 2>"$err")"
+            local rc=$?
+            set -e
+
+            if (( rc != 0 )); then
+              echo "::error::curl failed for ${endpoint} (rc=${rc})"
+              sed -n '1,200p' "$err" || true
+              if [[ -s "$out" ]]; then
+                echo "---- response ----"
+                sed -n '1,200p' "$out" || true
+                echo "---- end ----"
+              fi
+              return 1
+            fi
+
+            if [[ "$code" =~ ^[0-9]+$ ]] && (( code >= 400 )); then
+              echo "::error::HTTP ${code} from ${endpoint}"
+              if [[ -s "$out" ]]; then
+                echo "---- response ----"
+                sed -n '1,200p' "$out" || true
+                echo "---- end ----"
+              fi
+              return 1
+            fi
+
+            return 0
+          }
+
+          jq_ok_or_dump() {
+            local file="$1"
+            if ! jq . "$file" >/dev/null 2>&1; then
+              echo "::error::Response was not valid JSON."
+              sed -n '1,200p' "$file" || true
+              return 1
+            fi
+            return 0
+          }
+
+          jq_status_or_error() {
+            local file="$1"
+            local endpoint="$2"
+            if ! jq -e '.result.status == 1' "$file" >/dev/null 2>&1; then
+              echo "::error::${endpoint} returned status != 1"
+              jq -r '.result.errors[]? // empty' "$file" | sed -e 's/^/::error::/g' || true
+              return 1
+            fi
+            return 0
+          }
+
+          echo "Updating cPanel repo (branch=${branch}): ${CPANEL_REPO_ROOT}"
+          update_resp="$(mktemp)"
+          cpanel_get "VersionControl/update" "$update_resp" \
+            "repository_root=${CPANEL_REPO_ROOT}" \
+            "branch=${branch}"
+          jq_ok_or_dump "$update_resp"
+          jq . "$update_resp"
+          jq_status_or_error "$update_resp" "VersionControl/update"
+
+          deployable="$(jq -r '.result.data.deployable // 0' "$update_resp")"
+          deployable_reason="$(jq -r '.result.data.deployable_reason // empty' "$update_resp")"
+          if [[ "$deployable" != "1" ]]; then
+            echo "::error::Repository is not deployable. ${deployable_reason}"
+            exit 1
+          fi
+
           echo "Triggering cPanel deploy for repo: ${CPANEL_REPO_ROOT}"
           create_resp="$(mktemp)"
-
-          curl "${curl_flags[@]}" \
-            -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
-            --get \
-            --data-urlencode "repository_root=${CPANEL_REPO_ROOT}" \
-            "${base}/execute/VersionControlDeployment/create" \
-            -o "$create_resp"
-
+          cpanel_get "VersionControlDeployment/create" "$create_resp" \
+            "repository_root=${CPANEL_REPO_ROOT}"
+          jq_ok_or_dump "$create_resp"
           jq . "$create_resp"
-
-          # Fail fast if the task couldn't be created.
-          jq -e '.result.status == 1' "$create_resp" >/dev/null
+          jq_status_or_error "$create_resp" "VersionControlDeployment/create"
 
           deploy_id="$(jq -r '.result.data.deploy_id // empty' "$create_resp")"
           log_path="$(jq -r '.result.data.log_path // empty' "$create_resp")"
@@ -65,11 +148,9 @@ jobs:
           deadline=$((SECONDS + 300))
           while true; do
             retrieve_resp="$(mktemp)"
-            curl "${curl_flags[@]}" \
-              -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
-              --get \
-              "${base}/execute/VersionControlDeployment/retrieve" \
-              -o "$retrieve_resp"
+            cpanel_get "VersionControlDeployment/retrieve" "$retrieve_resp"
+            jq_ok_or_dump "$retrieve_resp"
+            jq_status_or_error "$retrieve_resp" "VersionControlDeployment/retrieve" || true
 
             entry="$(jq -c --arg id "$deploy_id" '.result.data[]? | select((.deploy_id|tostring) == $id) | . // empty' "$retrieve_resp" | head -n1 || true)"
             if [[ -z "$entry" ]]; then
@@ -98,14 +179,10 @@ jobs:
                   log_file="$(basename "$log_path")"
 
                   log_resp="$(mktemp)"
-                  curl "${curl_flags[@]}" \
-                    -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
-                    --get \
-                    --data-urlencode "dir=${log_dir}" \
-                    --data-urlencode "file=${log_file}" \
-                    --data-urlencode "to_charset=utf-8" \
-                    "${base}/execute/Fileman/get_file_content" \
-                    -o "$log_resp" || true
+                  cpanel_get "Fileman/get_file_content" "$log_resp" \
+                    "dir=${log_dir}" \
+                    "file=${log_file}" \
+                    "to_charset=utf-8" || true
 
                   echo "---- cPanel deploy log (tail) ----"
                   jq -r '.result.data.content // empty' "$log_resp" | tail -n 200 || true
