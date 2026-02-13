@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger cPanel deployment
+      - name: Trigger cPanel deployment and wait
         shell: bash
         env:
           CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
@@ -31,35 +31,96 @@ jobs:
           port="${CPANEL_PORT:-2083}"
           base="https://${CPANEL_HOST}:${port}"
 
-          curl_flags=(-sS -f)
+          curl_flags=(-sS --fail-with-body)
           if [[ "${CPANEL_INSECURE:-}" == "true" ]]; then
             curl_flags+=(-k)
           fi
 
           echo "Triggering cPanel deploy for repo: ${CPANEL_REPO_ROOT}"
-          resp="$(mktemp)"
+          create_resp="$(mktemp)"
 
           curl "${curl_flags[@]}" \
             -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
             --get \
             --data-urlencode "repository_root=${CPANEL_REPO_ROOT}" \
             "${base}/execute/VersionControlDeployment/create" \
-            -o "$resp"
+            -o "$create_resp"
 
-          if command -v jq >/dev/null 2>&1; then
-            jq . "$resp"
-          else
-            cat "$resp"
-          fi
+          jq . "$create_resp"
 
-          # Fail the job if cPanel returned a non-success status.
-          if command -v jq >/dev/null 2>&1; then
-            jq -e '(.status? == 1) or (.result?.status? == 1) or (.result?.metadata?.result? == 1) or (.metadata?.result? == 1)' "$resp" >/dev/null
-          else
-            # Best-effort fallback: don't silently succeed if we couldn't parse JSON.
-            echo "jq is missing on the runner; cannot validate response. Failing safe."
+          # Fail fast if the task couldn't be created.
+          jq -e '.result.status == 1' "$create_resp" >/dev/null
+
+          deploy_id="$(jq -r '.result.data.deploy_id // empty' "$create_resp")"
+          log_path="$(jq -r '.result.data.log_path // empty' "$create_resp")"
+          if [[ -z "$deploy_id" || "$deploy_id" == "null" ]]; then
+            echo "Missing deploy_id in response."
             exit 1
           fi
 
-          echo "cPanel deploy: success"
+          echo "Deployment queued: deploy_id=${deploy_id}"
+          echo "Deployment log path: ${log_path}"
 
+          # Poll deployment status until success/failure.
+          deadline=$((SECONDS + 300))
+          while true; do
+            retrieve_resp="$(mktemp)"
+            curl "${curl_flags[@]}" \
+              -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
+              --get \
+              "${base}/execute/VersionControlDeployment/retrieve" \
+              -o "$retrieve_resp"
+
+            entry="$(jq -c --arg id "$deploy_id" '.result.data[]? | select((.deploy_id|tostring) == $id) | . // empty' "$retrieve_resp" | head -n1 || true)"
+            if [[ -z "$entry" ]]; then
+              echo "Waiting for deploy_id=${deploy_id} to appear..."
+            else
+              echo "$entry" | jq .
+
+              succeeded="$(echo "$entry" | jq -r '.timestamps.succeeded // empty')"
+              failed="$(echo "$entry" | jq -r '.timestamps.failed // empty')"
+              canceled="$(echo "$entry" | jq -r '.timestamps.canceled // empty')"
+
+              if [[ -n "$succeeded" ]]; then
+                ident="$(echo "$entry" | jq -r '.repository_state.identifier // empty')"
+                branch="$(echo "$entry" | jq -r '.repository_state.branch // empty')"
+                echo "cPanel deploy: success (branch=${branch}, commit=${ident})"
+                exit 0
+              fi
+
+              if [[ -n "$failed" || -n "$canceled" ]]; then
+                echo "cPanel deploy: failed (deploy_id=${deploy_id})"
+                echo "Deployment log path: ${log_path}"
+
+                # Best effort: fetch and print the deployment log.
+                if [[ -n "$log_path" && "$log_path" != "null" ]]; then
+                  log_dir="$(dirname "$log_path")"
+                  log_file="$(basename "$log_path")"
+
+                  log_resp="$(mktemp)"
+                  curl "${curl_flags[@]}" \
+                    -H "Authorization: cpanel ${CPANEL_USER}:${CPANEL_TOKEN}" \
+                    --get \
+                    --data-urlencode "dir=${log_dir}" \
+                    --data-urlencode "file=${log_file}" \
+                    --data-urlencode "to_charset=utf-8" \
+                    "${base}/execute/Fileman/get_file_content" \
+                    -o "$log_resp" || true
+
+                  echo "---- cPanel deploy log (tail) ----"
+                  jq -r '.result.data.content // empty' "$log_resp" | tail -n 200 || true
+                  echo "---- end ----"
+                fi
+
+                exit 1
+              fi
+            fi
+
+            if (( SECONDS >= deadline )); then
+              echo "Timed out waiting for cPanel deployment to complete (deploy_id=${deploy_id})."
+              echo "Deployment log path: ${log_path}"
+              exit 1
+            fi
+
+            sleep 3
+          done
