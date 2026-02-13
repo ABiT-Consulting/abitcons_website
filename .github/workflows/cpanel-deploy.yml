@@ -104,12 +104,26 @@ jobs:
             local endpoint="$2"
             if ! jq -e '.result.status == 1' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
+              # cPanel often returns useful context in metadata.reason even when errors/messages are empty.
+              meta="$(jq -c '.result.metadata // {}' "$file" 2>/dev/null || true)"
+              if [[ -n "${meta:-}" && "${meta:-null}" != "null" && "${meta:-}" != "{}" ]]; then
+                echo "::error::Metadata: ${meta}"
+              fi
+
               reason="$(jq -r '.result.metadata.reason // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${reason:-}" && "${reason:-null}" != "null" ]]; then
                 echo "::error::Reason: ${reason}"
               fi
-              jq -r '.result.errors[]? // empty' "$file" 2>/dev/null | sed -e 's/^/::error::/g' || true
-              jq -r '.result.messages[]? // empty' "$file" 2>/dev/null | sed -e 's/^/::error::/g' || true
+
+              errors_json="$(jq -c '.result.errors // empty' "$file" 2>/dev/null || true)"
+              if [[ -n "${errors_json:-}" && "${errors_json:-null}" != "null" && "${errors_json:-}" != "[]" ]]; then
+                echo "::error::Errors: ${errors_json}"
+              fi
+
+              messages_json="$(jq -c '.result.messages // empty' "$file" 2>/dev/null || true)"
+              if [[ -n "${messages_json:-}" && "${messages_json:-null}" != "null" && "${messages_json:-}" != "[]" ]]; then
+                echo "::error::Messages: ${messages_json}"
+              fi
               return 1
             fi
             return 0
