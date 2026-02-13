@@ -70,10 +70,8 @@
         ]
       }
     </script>
-    <!-- Cloudflare Turnstile (replace data-sitekey in the form with your real site key). -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <script type="module" crossorigin src="/assets/index-CKBDqL8_.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-C3TI9Qx9.css">
+    <script type="module" crossorigin src="/assets/index-TYO5G43G.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-dwiAzx9p.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -793,11 +791,24 @@
               Message
               <textarea name="message" rows="5" placeholder="Tell us about your project"></textarea>
             </label>
-            <div class="captcha-slot" aria-live="polite">
-              <p class="captcha-slot__label">Captcha verification</p>
-              <div class="captcha-slot__box" id="captcha-container" role="group" aria-label="Captcha verification">
-                <!-- TODO: Replace this test key with your Cloudflare Turnstile site key. -->
-                <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA" data-theme="auto"></div>
+            <div class="captcha-slot" aria-live="polite" data-math-captcha hidden>
+              <p class="captcha-slot__label">Verification</p>
+              <div class="captcha-slot__box" role="group" aria-label="Verification question">
+                <p class="captcha-math__question">
+                  <span data-captcha-a></span> + <span data-captcha-b></span> = ?
+                </p>
+                <div class="captcha-math__controls">
+                  <input
+                    class="captcha-math__input"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    aria-label="Enter the answer"
+                    data-captcha-input
+                  />
+                  <button class="captcha-math__refresh" type="button" data-captcha-refresh>New</button>
+                </div>
+                <p class="captcha-math__hint" data-captcha-hint></p>
               </div>
             </div>
             <button class="btn primary" type="submit">Send Message</button>
