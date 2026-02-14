@@ -92,6 +92,7 @@
             <a href="#services">Services</a>
             <a href="#expertise">Expertise</a>
             <a href="#work">Work</a>
+            <a href="#account-access">Sign In</a>
             <a href="#contact">Contact</a>
           </nav>
           <div class="nav-actions">
@@ -337,6 +338,73 @@
               <h3>Launch & Support</h3>
               <p>We stay with you post-launch to optimize performance and unlock new value.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="account-access" id="account-access">
+        <div class="container split">
+          <div class="auth-card" data-reveal>
+            <p class="eyebrow">Customer Access</p>
+            <h2>Create your account and sign in securely.</h2>
+            <p>
+              Register new users or continue with Google and Facebook authentication.
+            </p>
+            <ul class="checklist">
+              <li>Sign up with email and password</li>
+              <li>Sign in with Google</li>
+              <li>Sign in with Facebook</li>
+            </ul>
+            <p class="form-note">Email sign-up works instantly and social auth is available from the Google/Facebook buttons.</p>
+          </div>
+
+          <div class="auth-box" data-auth-panel data-reveal>
+            <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+              <button class="auth-tab" type="button" role="tab" data-auth-tab="signup">Sign up</button>
+              <button class="auth-tab" type="button" role="tab" data-auth-tab="signin">Sign in</button>
+            </div>
+
+            <form class="auth-form" data-auth-form="signup">
+              <label>
+                Full name
+                <input type="text" name="name" autocomplete="name" placeholder="Jane Doe" required />
+              </label>
+              <label>
+                Email
+                <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label>
+                Confirm password
+                <input type="password" name="confirmPassword" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="btn primary" type="submit">Create account</button>
+            </form>
+
+            <form class="auth-form" data-auth-form="signin" hidden>
+              <label>
+                Email
+                <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" autocomplete="current-password" required />
+              </label>
+              <button class="btn primary" type="submit">Sign in</button>
+            </form>
+
+            <div class="auth-divider"><span>or continue with</span></div>
+            <div class="social-auth">
+              <button class="social-auth__btn" type="button" data-social-provider="Google">Continue with Google</button>
+              <button class="social-auth__btn social-auth__btn--facebook" type="button" data-social-provider="Facebook">Continue with Facebook</button>
+            </div>
+
+            <p class="auth-status" data-auth-status>Not signed in</p>
+            <button class="btn ghost" type="button" data-auth-logout hidden>Sign out</button>
+            <p class="auth-feedback" data-auth-feedback aria-live="polite"></p>
           </div>
         </div>
       </section>
