@@ -913,6 +913,111 @@ p {
   box-shadow: var(--shadow);
 }
 
+.auth-card,
+.auth-box {
+  background: var(--card);
+  padding: clamp(1.8rem, 3vw, 2.6rem);
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.auth-tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-tab.is-active {
+  background: color-mix(in oklab, var(--accent-2) 16%, white);
+  border-color: color-mix(in oklab, var(--accent-2) 52%, var(--line));
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.auth-form input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.7rem 0.95rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--input-bg);
+  color: var(--ink);
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.auth-divider {
+  margin: 1.1rem 0;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+.auth-divider span {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  padding: 0 0.5rem;
+}
+
+.social-auth {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.social-auth__btn {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.68rem 0.9rem;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.social-auth__btn--facebook {
+  background: color-mix(in oklab, #1877f2 10%, white);
+}
+
+.auth-feedback {
+  margin: 0.9rem 0 0;
+  min-height: 1.3em;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.auth-feedback.is-error {
+  color: color-mix(in oklab, var(--accent) 70%, black);
+}
+
 .contact-card {
   background: var(--card);
   padding: clamp(1.8rem, 3vw, 2.6rem);
