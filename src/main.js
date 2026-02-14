@@ -56,7 +56,11 @@ if (authPanel) {
   const tabs = Array.from(authPanel.querySelectorAll("[data-auth-tab]"));
   const forms = Array.from(authPanel.querySelectorAll("[data-auth-form]"));
   const feedback = authPanel.querySelector("[data-auth-feedback]");
+  const authStatus = authPanel.querySelector("[data-auth-status]");
+  const logoutButton = authPanel.querySelector("[data-auth-logout]");
   const socialButtons = Array.from(authPanel.querySelectorAll("[data-social-provider]"));
+
+  const storageKey = "abit-auth-user";
 
   const setFeedback = (message, isError = false) => {
     if (!feedback) {
@@ -64,6 +68,28 @@ if (authPanel) {
     }
     feedback.textContent = message;
     feedback.classList.toggle("is-error", isError);
+  };
+
+  const setAuthStatus = (message = "Not signed in") => {
+    if (authStatus) {
+      authStatus.textContent = message;
+    }
+  };
+
+  const persistUser = (user) => {
+    if (user) {
+      localStorage.setItem(storageKey, JSON.stringify(user));
+      setAuthStatus(`Signed in as ${user.name || user.email || "authenticated user"}`);
+      if (logoutButton) {
+        logoutButton.hidden = false;
+      }
+    } else {
+      localStorage.removeItem(storageKey);
+      setAuthStatus("Not signed in");
+      if (logoutButton) {
+        logoutButton.hidden = true;
+      }
+    }
   };
 
   const setAuthMode = (mode) => {
@@ -85,6 +111,9 @@ if (authPanel) {
     setFeedback("");
   };
 
+  const storedUsers = JSON.parse(localStorage.getItem("abit-auth-users") || "[]");
+  let users = Array.isArray(storedUsers) ? storedUsers : [];
+
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       setAuthMode(tab.dataset.authTab);
@@ -95,34 +124,127 @@ if (authPanel) {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
 
+      const email = form.elements.email?.value?.trim().toLowerCase() ?? "";
+      const password = form.elements.password?.value ?? "";
+
+      if (!email || !password) {
+        setFeedback("Email and password are required.", true);
+        return;
+      }
+
       if (form.dataset.authForm === "signup") {
-        const password = form.elements.password?.value ?? "";
+        const name = form.elements.name?.value?.trim() ?? "";
         const confirmPassword = form.elements.confirmPassword?.value ?? "";
 
         if (password !== confirmPassword) {
           setFeedback("Passwords do not match. Please try again.", true);
-          form.elements.confirmPassword?.focus();
           return;
         }
 
-        setFeedback("Sign-up successful. Your customer account is ready.");
+        if (users.some((user) => user.email === email)) {
+          setFeedback("This email is already registered. Please sign in.", true);
+          return;
+        }
+
+        const newUser = { name, email, password, provider: "Email" };
+        users = [...users, newUser];
+        localStorage.setItem("abit-auth-users", JSON.stringify(users));
+        persistUser(newUser);
+        setFeedback("Sign-up successful. Your account is ready.");
         form.reset();
         return;
       }
 
+      const user = users.find((item) => item.email === email && item.password === password);
+      if (!user) {
+        setFeedback("Invalid credentials. Please try again.", true);
+        return;
+      }
+
+      persistUser(user);
       setFeedback("Signed in successfully. Welcome back.");
       form.reset();
     });
   });
 
+  const providerLogin = (provider) => {
+    const popup = window.open(
+      "",
+      "oauthPopup",
+      "width=480,height=640,left=200,top=120,noopener,noreferrer"
+    );
+
+    if (!popup) {
+      setFeedback("Please allow popups to continue with social authentication.", true);
+      return;
+    }
+
+    popup.document.write(`
+      <html><head><title>${provider} Login</title></head>
+      <body style="font-family:Arial,sans-serif;padding:24px;line-height:1.5;">
+        <h2>${provider} authentication</h2>
+        <p>This demo simulates an OAuth response for ${provider}.</p>
+        <button id="approve" style="padding:10px 14px;">Approve & Continue</button>
+        <script>
+          document.getElementById('approve').addEventListener('click', function () {
+            const payload = {
+              provider: '${provider}',
+              email: '${provider.toLowerCase()}_user@abitcons.com',
+              name: '${provider} User'
+            };
+            window.opener.postMessage({ type: 'ABIT_SOCIAL_AUTH', payload }, window.location.origin);
+            window.close();
+          });
+        <\/script>
+      </body></html>
+    `);
+  };
+
   socialButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const provider = button.dataset.socialProvider;
-      const intent = button.dataset.authIntent === "signup" ? "sign-up" : "sign-in";
-      setFeedback(`${provider} ${intent} requested. Connect your OAuth credentials to enable this.`);
+      if (!provider) {
+        setFeedback("Unsupported provider selected.", true);
+        return;
+      }
+      providerLogin(provider);
     });
   });
 
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin || event.data?.type !== "ABIT_SOCIAL_AUTH") {
+      return;
+    }
+
+    const payload = event.data.payload;
+    if (!payload?.email) {
+      setFeedback("Social authentication failed. Please try again.", true);
+      return;
+    }
+
+    const socialUser = {
+      name: payload.name,
+      email: payload.email,
+      provider: payload.provider,
+    };
+
+    const existing = users.find((user) => user.email === socialUser.email);
+    if (!existing) {
+      users = [...users, socialUser];
+      localStorage.setItem("abit-auth-users", JSON.stringify(users));
+    }
+
+    persistUser(socialUser);
+    setFeedback(`${payload.provider} authentication completed successfully.`);
+  });
+
+  logoutButton?.addEventListener("click", () => {
+    persistUser(null);
+    setFeedback("You have been signed out.");
+  });
+
+  const activeUser = JSON.parse(localStorage.getItem(storageKey) || "null");
+  persistUser(activeUser);
   setAuthMode("signup");
 }
 
