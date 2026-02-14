@@ -114,6 +114,7 @@
             <a href="#products">Products</a>
             <a href="#expertise">Expertise</a>
             <a href="#work">Work</a>
+            <a href="#account-access">Sign In</a>
             <a href="#contact">Contact</a>
           </nav>
           <div class="nav-actions">
@@ -757,6 +758,80 @@
               <h3>Launch & Support</h3>
               <p>We stay with you post-launch to optimize performance and unlock new value.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+
+
+      <section class="auth" id="account-access">
+        <div class="container split">
+          <div class="auth-card" data-reveal>
+            <p class="eyebrow">Customer Portal</p>
+            <h2>Create your account or sign in instantly.</h2>
+            <p>
+              Access your ABiT customer workspace to track projects, manage deliverables, and stay
+              connected with your delivery team. Continue with email, Google, or Facebook.
+            </p>
+            <ul class="checklist">
+              <li>One-click social sign-in with Google and Facebook</li>
+              <li>Secure account access from any device</li>
+              <li>Fast onboarding for new customer teams</li>
+            </ul>
+          </div>
+
+          <div class="auth-box" data-auth-panel data-reveal>
+            <div class="auth-tabs" role="tablist" aria-label="Choose account action">
+              <button type="button" class="auth-tab is-active" role="tab" aria-selected="true" data-auth-tab="signup">
+                Sign Up
+              </button>
+              <button type="button" class="auth-tab" role="tab" aria-selected="false" data-auth-tab="signin">
+                Sign In
+              </button>
+            </div>
+
+            <form class="auth-form" data-auth-form="signup">
+              <label>
+                Full name
+                <input type="text" name="name" placeholder="Jane Doe" autocomplete="name" required />
+              </label>
+              <label>
+                Work email
+                <input type="email" name="email" placeholder="jane@company.com" autocomplete="email" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required />
+              </label>
+              <label>
+                Confirm password
+                <input type="password" name="confirmPassword" placeholder="Repeat your password" minlength="8" autocomplete="new-password" required />
+              </label>
+              <button class="btn primary" type="submit">Create account</button>
+            </form>
+
+            <form class="auth-form" data-auth-form="signin" hidden>
+              <label>
+                Email
+                <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" placeholder="Enter password" autocomplete="current-password" required />
+              </label>
+              <button class="btn primary" type="submit">Sign in</button>
+            </form>
+
+            <div class="auth-divider" aria-hidden="true"><span>or continue with</span></div>
+            <div class="social-auth">
+              <button class="social-auth__btn" type="button" data-social-provider="google" data-auth-intent="signup">
+                Continue with Google
+              </button>
+              <button class="social-auth__btn social-auth__btn--facebook" type="button" data-social-provider="facebook" data-auth-intent="signup">
+                Continue with Facebook
+              </button>
+            </div>
+            <p class="auth-feedback" aria-live="polite" data-auth-feedback></p>
           </div>
         </div>
       </section>
