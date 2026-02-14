@@ -51,6 +51,81 @@ if ("IntersectionObserver" in window) {
   revealElements.forEach((el) => el.classList.add("is-visible"));
 }
 
+const authPanel = document.querySelector("[data-auth-panel]");
+if (authPanel) {
+  const tabs = Array.from(authPanel.querySelectorAll("[data-auth-tab]"));
+  const forms = Array.from(authPanel.querySelectorAll("[data-auth-form]"));
+  const feedback = authPanel.querySelector("[data-auth-feedback]");
+  const socialButtons = Array.from(authPanel.querySelectorAll("[data-social-provider]"));
+
+  const setFeedback = (message, isError = false) => {
+    if (!feedback) {
+      return;
+    }
+    feedback.textContent = message;
+    feedback.classList.toggle("is-error", isError);
+  };
+
+  const setAuthMode = (mode) => {
+    tabs.forEach((tab) => {
+      const isActive = tab.dataset.authTab === mode;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-selected", String(isActive));
+    });
+
+    forms.forEach((form) => {
+      const isActive = form.dataset.authForm === mode;
+      form.hidden = !isActive;
+    });
+
+    socialButtons.forEach((button) => {
+      button.dataset.authIntent = mode;
+    });
+
+    setFeedback("");
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      setAuthMode(tab.dataset.authTab);
+    });
+  });
+
+  forms.forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      if (form.dataset.authForm === "signup") {
+        const password = form.elements.password?.value ?? "";
+        const confirmPassword = form.elements.confirmPassword?.value ?? "";
+
+        if (password !== confirmPassword) {
+          setFeedback("Passwords do not match. Please try again.", true);
+          form.elements.confirmPassword?.focus();
+          return;
+        }
+
+        setFeedback("Sign-up successful. Your customer account is ready.");
+        form.reset();
+        return;
+      }
+
+      setFeedback("Signed in successfully. Welcome back.");
+      form.reset();
+    });
+  });
+
+  socialButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const provider = button.dataset.socialProvider;
+      const intent = button.dataset.authIntent === "signup" ? "sign-up" : "sign-in";
+      setFeedback(`${provider} ${intent} requested. Connect your OAuth credentials to enable this.`);
+    });
+  });
+
+  setAuthMode("signup");
+}
+
 const contactForm = document.querySelector(".contact-form");
 if (contactForm) {
   const captchaSlot = contactForm.querySelector("[data-math-captcha]");
