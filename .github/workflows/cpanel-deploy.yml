@@ -140,6 +140,45 @@ jobs:
             return 0
           }
 
+          echo "Preflight: validating cPanel repository binding"
+          repo_name="${GITHUB_REPOSITORY##*/}"
+          if [[ "${CPANEL_REPO_ROOT,,}" != *"${repo_name,,}"* ]]; then
+            echo "::warning::CPANEL_REPO_ROOT does not contain repo name '${repo_name}'. Verify this secret is set for the correct repository."
+          fi
+
+          repo_resp="$(mktemp)"
+          if cpanel_get "VersionControl/retrieve" "$repo_resp" \
+            "repository_root=${CPANEL_REPO_ROOT}"; then
+            jq_ok_or_dump "$repo_resp"
+            jq_status_or_error "$repo_resp" "VersionControl/retrieve" || true
+
+            configured_repo_url="$(jq -r '[
+              (.result // .).data.clone_url?,
+              (.result // .).data.repository_url?,
+              (.result // .).data.remote_url?,
+              (.result // .).data.url?,
+              (.result // .).data.source_repo?,
+              (.result // .).data[0].clone_url?,
+              (.result // .).data[0].repository_url?,
+              (.result // .).data[0].remote_url?,
+              (.result // .).data[0].url?,
+              (.result // .).data[0].source_repo?
+            ] | map(select(type == "string" and length > 0)) | .[0] // empty' "$repo_resp")"
+
+            if [[ -n "$configured_repo_url" ]]; then
+              expected_repo_hint="github.com/${GITHUB_REPOSITORY}"
+              if [[ "${configured_repo_url,,}" != *"${expected_repo_hint,,}"* ]]; then
+                echo "::error::CPANEL_REPO_ROOT appears to point to '${configured_repo_url}', expected '${expected_repo_hint}'."
+                echo "::error::Fix CPANEL_REPO_ROOT secret for this GitHub repository."
+                exit 1
+              fi
+            else
+              echo "::warning::Could not determine repository remote URL from cPanel response; skipping strict repo binding check."
+            fi
+          else
+            echo "::warning::Could not call VersionControl/retrieve; skipping strict repo binding check."
+          fi
+
           echo "Updating cPanel repo (branch=${branch}): ${CPANEL_REPO_ROOT}"
           update_resp="$(mktemp)"
           cpanel_get "VersionControl/update" "$update_resp" \
