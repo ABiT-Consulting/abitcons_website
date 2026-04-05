@@ -260,36 +260,56 @@ main {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .nav-links {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 500;
   color: var(--ink-soft);
 }
 
 .nav-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  padding-bottom: 0.2rem;
+  min-height: 2.9rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 10px 22px rgba(12, 26, 43, 0.06);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .nav-links a::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 0;
-  height: 2px;
-  background: var(--accent);
-  transition: width 0.3s ease;
+  content: none;
 }
 
 .nav-links a:hover::after,
 .nav-links a:focus::after {
-  width: 100%;
+  width: 0;
+}
+
+.nav-links a:hover,
+.nav-links a:focus {
+  border-color: var(--line-strong);
+  background: var(--card-strong);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
 }
 
 .nav-actions {
@@ -853,6 +873,117 @@ p {
   font-size: 0.85rem;
 }
 
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.product-actions .product-cta {
+  margin-top: 0;
+}
+
+.product-actions .btn {
+  flex: 1 1 11rem;
+}
+
+body.video-modal-open {
+  overflow: hidden;
+}
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(6, 12, 20, 0.74);
+  backdrop-filter: blur(16px);
+}
+
+.video-modal[hidden] {
+  display: none;
+}
+
+.video-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.video-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 920px);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--card-strong);
+  box-shadow: var(--shadow);
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.video-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.video-modal__eyebrow {
+  margin-bottom: 0.55rem;
+}
+
+.video-modal__title {
+  margin-bottom: 0;
+}
+
+.video-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--chip);
+  color: var(--ink);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.video-modal__close:hover,
+.video-modal__close:focus {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.video-frame {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #000;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -1273,8 +1404,25 @@ p {
 
   .nav-links,
   .nav-actions {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .nav-links {
+    gap: 0.75rem;
+  }
+
+  .nav-links a {
+    width: 100%;
+    white-space: normal;
+    font-size: 0.92rem;
+    min-height: 3rem;
+  }
+
+  .nav-actions .btn {
+    width: 100%;
   }
 
   .nav-toggle {
@@ -1290,6 +1438,14 @@ p {
     position: static;
     margin-top: 1rem;
     max-width: 100%;
+  }
+
+  .video-modal {
+    padding: 0.75rem;
+  }
+
+  .video-modal__header {
+    align-items: center;
   }
 }
 

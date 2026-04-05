@@ -90,8 +90,8 @@
         ]
       }
     </script>
-    <script type="module" crossorigin src="/assets/index-DH1uqLXa.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-SO7cWglr.css">
+    <script type="module" crossorigin src="/assets/index-CBqxebTW.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-TFwZUPM0.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -589,7 +589,20 @@
                   </div>
                 </div>
               </details>
-              <a class="btn outline product-cta" href="#contact">Request Demo</a>
+              <div class="product-actions">
+                <a class="btn outline product-cta" href="#contact">Request Demo</a>
+                <button
+                  class="btn primary product-cta"
+                  type="button"
+                  data-product-video
+                  data-video-title="SBODESK Demo Video"
+                  data-video-url="https://www.youtube.com/embed/WWkt-igjp3c?rel=0&modestbranding=1"
+                  aria-haspopup="dialog"
+                  aria-controls="product-video-modal"
+                >
+                  Watch Video
+                </button>
+              </div>
             </article>
             <article
               class="product-card"
@@ -912,6 +925,47 @@
         </div>
       </section>
     </main>
+
+    <div class="video-modal" data-video-modal id="product-video-modal" hidden>
+      <button
+        class="video-modal__backdrop"
+        type="button"
+        aria-label="Close video player"
+        data-video-modal-close
+      ></button>
+      <div
+        class="video-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-video-modal-title"
+      >
+        <div class="video-modal__header">
+          <div>
+            <p class="eyebrow video-modal__eyebrow">Product Video</p>
+            <h2 class="video-modal__title" id="product-video-modal-title" data-video-modal-title>
+              SBODESK Demo Video
+            </h2>
+          </div>
+          <button
+            class="video-modal__close"
+            type="button"
+            aria-label="Close video player"
+            data-video-modal-close
+          >
+            &times;
+          </button>
+        </div>
+        <div class="video-frame">
+          <iframe
+            title="SBODESK demo video"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            data-video-modal-iframe
+          ></iframe>
+        </div>
+      </div>
+    </div>
 
     <footer class="site-footer">
       <div class="container footer-grid">

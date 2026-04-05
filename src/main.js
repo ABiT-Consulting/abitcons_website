@@ -51,6 +51,73 @@ if ("IntersectionObserver" in window) {
   revealElements.forEach((el) => el.classList.add("is-visible"));
 }
 
+const videoModal = document.querySelector("[data-video-modal]");
+if (videoModal) {
+  const videoFrame = videoModal.querySelector("[data-video-modal-iframe]");
+  const videoTitle = videoModal.querySelector("[data-video-modal-title]");
+  const closeButtons = Array.from(videoModal.querySelectorAll("[data-video-modal-close]"));
+  const triggers = Array.from(document.querySelectorAll("[data-product-video]"));
+
+  let lastActiveElement = null;
+
+  const closeVideoModal = () => {
+    if (!videoFrame) {
+      return;
+    }
+
+    videoModal.classList.remove("is-open");
+    videoModal.hidden = true;
+    document.body.classList.remove("video-modal-open");
+    videoFrame.setAttribute("src", "");
+
+    if (lastActiveElement instanceof HTMLElement) {
+      lastActiveElement.focus();
+    }
+  };
+
+  const openVideoModal = (trigger) => {
+    const url = trigger.dataset.videoUrl;
+    if (!url || !videoFrame) {
+      return;
+    }
+
+    lastActiveElement = document.activeElement;
+    if (videoTitle) {
+      videoTitle.textContent = trigger.dataset.videoTitle || "Product video";
+    }
+
+    videoFrame.setAttribute("src", url);
+    videoModal.hidden = false;
+    document.body.classList.add("video-modal-open");
+
+    requestAnimationFrame(() => {
+      videoModal.classList.add("is-open");
+      closeButtons[0]?.focus();
+    });
+  };
+
+  triggers.forEach((trigger) => {
+    trigger.addEventListener("click", () => openVideoModal(trigger));
+  });
+
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", closeVideoModal);
+  });
+
+  videoModal.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.hasAttribute("data-video-modal-close")) {
+      closeVideoModal();
+    }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !videoModal.hidden) {
+      closeVideoModal();
+    }
+  });
+}
+
 const authPanel = document.querySelector("[data-auth-panel]");
 if (authPanel) {
   const tabs = Array.from(authPanel.querySelectorAll("[data-auth-tab]"));
