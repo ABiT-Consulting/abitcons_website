@@ -89,6 +89,55 @@ jobs:
             return 0
           }
 
+          cpanel_api2() {
+            local module="$1"; shift
+            local func="$1"; shift
+            local out="$1"; shift
+            local url="${base}/json-api/cpanel"
+            local err
+            err="$(mktemp)"
+
+            local cmd=(curl "${curl_flags[@]}" -H "$auth_header" -H "Accept: application/json" --get
+              --data-urlencode "cpanel_jsonapi_user=${CPANEL_USER}"
+              --data-urlencode "cpanel_jsonapi_apiversion=2"
+              --data-urlencode "cpanel_jsonapi_module=${module}"
+              --data-urlencode "cpanel_jsonapi_func=${func}")
+            local kv
+            for kv in "$@"; do
+              cmd+=(--data-urlencode "$kv")
+            done
+            cmd+=("$url" -o "$out" -w "%{http_code}")
+
+            set +e
+            local code
+            code="$("${cmd[@]}" 2>"$err")"
+            local rc=$?
+            set -e
+
+            if (( rc != 0 )); then
+              echo "::error::curl failed for ${module}::${func} (rc=${rc})"
+              sed -n '1,200p' "$err" || true
+              if [[ -s "$out" ]]; then
+                echo "---- response ----"
+                sed -n '1,200p' "$out" || true
+                echo "---- end ----"
+              fi
+              return 1
+            fi
+
+            if [[ "$code" =~ ^[0-9]+$ ]] && (( code >= 400 )); then
+              echo "::error::HTTP ${code} from ${module}::${func}"
+              if [[ -s "$out" ]]; then
+                echo "---- response ----"
+                sed -n '1,200p' "$out" || true
+                echo "---- end ----"
+              fi
+              return 1
+            fi
+
+            return 0
+          }
+
           jq_ok_or_dump() {
             local file="$1"
             if ! jq . "$file" >/dev/null 2>&1; then
@@ -106,7 +155,7 @@ jobs:
             #   {"apiversion":3,"module":"...","func":"...","result":{...}}
             # or unwrapped (just the inner result object). Handle both.
             # cPanel API 2 responses can also appear under .cpanelresult.
-            if ! jq -e '((.result // .cpanelresult // .).status // 0) == 1' "$file" >/dev/null 2>&1; then
+            if ! jq -e '((.result // .).status // 0) == 1 or ((.cpanelresult.event.result // .cpanelresult.data[0].result // .cpanelresult.result // 0) == 1)' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
 
               # Include a compact excerpt of the raw JSON response (useful when .result.* keys are missing).
@@ -122,7 +171,7 @@ jobs:
                 echo "::error::Metadata: ${meta}"
               fi
 
-              reason="$(jq -r '(.result // .cpanelresult // .).metadata.reason // empty' "$file" 2>/dev/null || true)"
+              reason="$(jq -r '(.result // .cpanelresult // .).metadata.reason // (.cpanelresult.data[0].reason // empty) // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${reason:-}" && "${reason:-null}" != "null" ]]; then
                 echo "::error::Reason: ${reason}"
               fi
@@ -151,7 +200,7 @@ jobs:
           sns_changed=0
           for sns_subdomain in "sns" "sns.sbodesk.com"; do
             sns_resp="$(mktemp)"
-            if cpanel_get "SubDomain/changedocroot" "$sns_resp" \
+            if cpanel_api2 "SubDomain" "changedocroot" "$sns_resp" \
               "subdomain=${sns_subdomain}" \
               "rootdomain=sbodesk.com" \
               "dir=sns-site"; then
