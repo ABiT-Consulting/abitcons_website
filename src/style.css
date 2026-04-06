@@ -1299,6 +1299,10 @@ body.video-modal-open {
   margin: 0;
 }
 
+.form-note.is-error {
+  color: color-mix(in oklab, var(--accent) 70%, black);
+}
+
 .site-footer {
   padding: 3rem 0 2rem;
   background: var(--footer-bg);
