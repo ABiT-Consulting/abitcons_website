@@ -105,7 +105,8 @@ jobs:
             # cPanel UAPI responses can be either wrapped:
             #   {"apiversion":3,"module":"...","func":"...","result":{...}}
             # or unwrapped (just the inner result object). Handle both.
-            if ! jq -e '((.result // .).status // 0) == 1' "$file" >/dev/null 2>&1; then
+            # cPanel API 2 responses can also appear under .cpanelresult.
+            if ! jq -e '((.result // .cpanelresult // .).status // 0) == 1' "$file" >/dev/null 2>&1; then
               echo "::error::${endpoint} returned status != 1"
 
               # Include a compact excerpt of the raw JSON response (useful when .result.* keys are missing).
@@ -116,22 +117,22 @@ jobs:
               fi
 
               # cPanel often returns useful context in metadata.reason even when errors/messages are empty.
-              meta="$(jq -c '(.result // .).metadata // {}' "$file" 2>/dev/null || true)"
+              meta="$(jq -c '(.result // .cpanelresult // .).metadata // {}' "$file" 2>/dev/null || true)"
               if [[ -n "${meta:-}" && "${meta:-null}" != "null" && "${meta:-}" != "{}" ]]; then
                 echo "::error::Metadata: ${meta}"
               fi
 
-              reason="$(jq -r '(.result // .).metadata.reason // empty' "$file" 2>/dev/null || true)"
+              reason="$(jq -r '(.result // .cpanelresult // .).metadata.reason // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${reason:-}" && "${reason:-null}" != "null" ]]; then
                 echo "::error::Reason: ${reason}"
               fi
 
-              errors_json="$(jq -c '(.result // .).errors // empty' "$file" 2>/dev/null || true)"
+              errors_json="$(jq -c '(.result // .cpanelresult // .).errors // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${errors_json:-}" && "${errors_json:-null}" != "null" && "${errors_json:-}" != "[]" ]]; then
                 echo "::error::Errors: ${errors_json}"
               fi
 
-              messages_json="$(jq -c '(.result // .).messages // empty' "$file" 2>/dev/null || true)"
+              messages_json="$(jq -c '(.result // .cpanelresult // .).messages // empty' "$file" 2>/dev/null || true)"
               if [[ -n "${messages_json:-}" && "${messages_json:-null}" != "null" && "${messages_json:-}" != "[]" ]]; then
                 echo "::error::Messages: ${messages_json}"
               fi
@@ -144,6 +145,31 @@ jobs:
           repo_name="${GITHUB_REPOSITORY##*/}"
           if [[ "${CPANEL_REPO_ROOT,,}" != *"${repo_name,,}"* ]]; then
             echo "::warning::CPANEL_REPO_ROOT does not contain repo name '${repo_name}'. Verify this secret is set for the correct repository."
+          fi
+
+          echo "Ensuring SNS uses isolated docroot (/sns-site)"
+          sns_changed=0
+          for sns_subdomain in "sns" "sns.sbodesk.com"; do
+            sns_resp="$(mktemp)"
+            if cpanel_get "SubDomain/changedocroot" "$sns_resp" \
+              "subdomain=${sns_subdomain}" \
+              "rootdomain=sbodesk.com" \
+              "dir=sns-site"; then
+              jq_ok_or_dump "$sns_resp"
+              jq . "$sns_resp"
+              if jq_status_or_error "$sns_resp" "SubDomain/changedocroot"; then
+                sns_changed=1
+                echo "SNS docroot moved/confirmed for ${sns_subdomain} -> /sns-site"
+                break
+              fi
+            else
+              echo "::warning::changedocroot attempt failed for ${sns_subdomain}, trying fallback form if available."
+            fi
+          done
+
+          if (( ! sns_changed )); then
+            echo "::error::Unable to set SNS document root to /sns-site."
+            exit 1
           fi
 
           repo_resp="$(mktemp)"
