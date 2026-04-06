@@ -324,6 +324,7 @@ if (contactForm) {
   const captchaHint = captchaSlot?.querySelector("[data-captcha-hint]");
   const captchaRefresh = captchaSlot?.querySelector("[data-captcha-refresh]");
   const submitButton = contactForm.querySelector('button[type="submit"]');
+  const formNote = contactForm.querySelector("[data-form-note]");
 
   const watchedFields = Array.from(contactForm.querySelectorAll("input, textarea")).filter(
     (field) => field !== captchaInput && field.type !== "submit" && field.type !== "button"
@@ -340,6 +341,14 @@ if (contactForm) {
     }
     captchaHint.textContent = message;
     captchaHint.classList.toggle("is-error", isError);
+  };
+
+  const setFormNote = (message, isError = false) => {
+    if (!formNote) {
+      return;
+    }
+    formNote.textContent = message;
+    formNote.classList.toggle("is-error", isError);
   };
 
   const updateSubmitState = () => {
@@ -433,15 +442,51 @@ if (contactForm) {
     captchaInput?.focus();
   });
 
-  contactForm.addEventListener("submit", (event) => {
+  contactForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
     updateCaptchaVisibility();
-    if (!captchaSlot || captchaSlot.hidden) {
-      return;
-    }
-    if (!isSolved) {
-      event.preventDefault();
+    if ((captchaSlot && !captchaSlot.hidden) && !isSolved) {
       setHint("Please solve the verification question.", true);
       captchaInput?.focus();
+      setFormNote("Please complete verification first.", true);
+      return;
+    }
+
+    const endpoint = contactForm.getAttribute("action");
+    if (!endpoint || !submitButton) {
+      return;
+    }
+
+    try {
+      submitButton.disabled = true;
+      setFormNote("Sending message...", false);
+
+      const formData = new FormData(contactForm);
+      formData.append("_subject", formData.get("subject") || "New contact inquiry");
+      formData.append("_template", "table");
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Submit failed");
+      }
+
+      contactForm.reset();
+      captchaSlot.hidden = true;
+      captchaInput?.setAttribute("aria-invalid", "false");
+      expectedAnswer = null;
+      isSolved = false;
+      setHint("", false);
+      setFormNote("Message sent successfully.", false);
+      updateSubmitState();
+    } catch (error) {
+      setFormNote("Unable to send right now. Please try again in a moment.", true);
+    } finally {
+      submitButton.disabled = false;
     }
   });
 
