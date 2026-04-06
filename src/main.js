@@ -475,16 +475,29 @@ if (contactForm) {
         throw new Error("Submit failed");
       }
 
+      const payload = await response.json().catch(() => null);
+      const isAccepted = payload?.success === true;
+      if (!isAccepted) {
+        const reason =
+          payload?.message ||
+          "Request was received but delivery is not active yet. Please verify mailbox first.";
+        throw new Error(reason);
+      }
+
       contactForm.reset();
       captchaSlot.hidden = true;
       captchaInput?.setAttribute("aria-invalid", "false");
       expectedAnswer = null;
       isSolved = false;
       setHint("", false);
-      setFormNote("Message sent successfully.", false);
+      setFormNote("Message accepted. Please check inbox and spam.", false);
       updateSubmitState();
     } catch (error) {
-      setFormNote("Unable to send right now. Please try again in a moment.", true);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unable to send right now. Please try again in a moment.";
+      setFormNote(message, true);
     } finally {
       submitButton.disabled = false;
     }
