@@ -4,7 +4,7 @@
 deployment:
   tasks:
     # Use the account home directory so this works even if the server uses /home, /home1, etc.
+    # Do not delete the shared public_html tree here; SNS lives under the same account.
     - export DEPLOYPATH="${HOME}/public_html/"
     - /bin/mkdir -p "$DEPLOYPATH"
-    - /bin/rm -rf "$DEPLOYPATH"/*
     - /bin/cp -a ./dist/. "$DEPLOYPATH"
