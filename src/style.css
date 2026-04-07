@@ -1204,14 +1204,42 @@ body.video-modal-open {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0.68rem 0.9rem;
-  background: #fff;
+  background: var(--card);
   color: var(--ink);
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .social-auth__btn--facebook {
   background: color-mix(in oklab, #1877f2 10%, white);
+}
+
+.social-auth__btn:hover,
+.social-auth__btn:focus {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .social-auth__btn {
+    background: color-mix(in oklab, var(--card-strong) 92%, black);
+    color: #eaf1ff;
+    border-color: rgba(244, 247, 251, 0.2);
+  }
+
+  .social-auth__btn--facebook {
+    background: linear-gradient(135deg, rgba(24, 119, 242, 0.34), rgba(59, 130, 246, 0.18));
+    color: #f3f7ff;
+  }
+
+  .social-auth__btn:hover,
+  .social-auth__btn:focus {
+    border-color: rgba(244, 247, 251, 0.35);
+    background: color-mix(in oklab, var(--card-strong) 82%, #0b1220);
+  }
 }
 
 .auth-feedback {
