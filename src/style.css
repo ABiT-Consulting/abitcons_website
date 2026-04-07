@@ -1069,11 +1069,24 @@ body.video-modal-open {
   padding: 0.6rem 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .auth-tab.is-active {
-  background: color-mix(in oklab, var(--accent-2) 16%, white);
-  border-color: color-mix(in oklab, var(--accent-2) 52%, var(--line));
+  background: linear-gradient(
+    120deg,
+    color-mix(in oklab, var(--accent) 82%, black),
+    color-mix(in oklab, var(--accent-2) 76%, black)
+  );
+  border-color: color-mix(in oklab, var(--accent-2) 56%, white);
+  color: #fff;
+  box-shadow: 0 6px 16px color-mix(in oklab, var(--accent) 25%, transparent);
+}
+
+.auth-tab:not(.is-active):hover {
+  border-color: color-mix(in oklab, var(--line) 45%, white);
+  background: color-mix(in oklab, var(--input-bg) 80%, white);
 }
 
 .auth-form {
