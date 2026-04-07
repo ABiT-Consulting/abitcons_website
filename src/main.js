@@ -260,13 +260,21 @@ if (authPanel) {
   const providerLogin = (provider, intent = "signup") => {
     const popupUrl = `/oauth-popup.html?provider=${encodeURIComponent(
       provider
-    )}&intent=${encodeURIComponent(intent)}`;
+    )}&intent=${encodeURIComponent(intent)}&t=${Date.now()}`;
     const popup = window.open(popupUrl, "oauthPopup", "width=480,height=640,left=200,top=120");
 
     if (!popup) {
       setFeedback("Please allow popups to continue with social authentication.", true);
       return;
     }
+
+    // Some browsers occasionally keep reused popups at about:blank; force navigation.
+    try {
+      popup.location.replace(popupUrl);
+    } catch (error) {
+      // Ignore cross-window timing issues; the popup already has the target URL.
+    }
+
     popup.focus();
   };
 
