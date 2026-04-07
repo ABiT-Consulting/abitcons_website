@@ -1,41 +1,41 @@
 :root {
   color-scheme: light;
-  --bg: #f6f2ea;
-  --bg-alt: #f0ece2;
-  --ink: #0c1a2b;
-  --ink-soft: #2d3b52;
-  --accent: #8b0000;
-  --accent-2: #14b8a6;
-  --accent-3: #b22222;
+  --bg: #f4f7fb;
+  --bg-alt: #edf2f8;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --accent: #b42318;
+  --accent-2: #0f766e;
+  --accent-3: #c2410c;
   --card: #ffffff;
   --card-strong: #ffffff;
-  --line: rgba(12, 26, 43, 0.12);
-  --line-strong: rgba(12, 26, 43, 0.2);
-  --shadow: 0 22px 55px rgba(12, 26, 43, 0.14);
-  --shadow-soft: 0 14px 35px rgba(12, 26, 43, 0.12);
-  --chip: rgba(12, 26, 43, 0.08);
-  --input-bg: rgba(255, 255, 255, 0.9);
-  --tag-bg: rgba(20, 184, 166, 0.15);
-  --header-bg: rgba(246, 242, 234, 0.72);
-  --header-bg-solid: rgba(246, 242, 234, 0.92);
+  --line: rgba(15, 23, 42, 0.11);
+  --line-strong: rgba(15, 23, 42, 0.2);
+  --shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+  --shadow-soft: 0 12px 28px rgba(15, 23, 42, 0.08);
+  --chip: rgba(15, 23, 42, 0.07);
+  --input-bg: #ffffff;
+  --tag-bg: rgba(15, 118, 110, 0.12);
+  --header-bg: rgba(255, 255, 255, 0.76);
+  --header-bg-solid: rgba(255, 255, 255, 0.94);
   --footer-bg: #0c1a2b;
-  --glow-one: rgba(20, 184, 166, 0.25);
-  --glow-two: rgba(139, 0, 0, 0.2);
-  --glow-three: rgba(178, 34, 34, 0.18);
-  --beam-one: rgba(139, 0, 0, 0.12);
-  --beam-two: rgba(20, 184, 166, 0.12);
-  --beam-three: rgba(178, 34, 34, 0.1);
-  --grid: rgba(12, 26, 43, 0.08);
-  --hero-overlay: rgba(12, 26, 43, 0.12);
-  --hero-glass: rgba(255, 255, 255, 0.72);
+  --glow-one: rgba(14, 165, 233, 0.12);
+  --glow-two: rgba(194, 65, 12, 0.08);
+  --glow-three: rgba(15, 118, 110, 0.1);
+  --beam-one: rgba(59, 130, 246, 0.07);
+  --beam-two: rgba(15, 118, 110, 0.08);
+  --beam-three: rgba(180, 83, 9, 0.08);
+  --grid: rgba(71, 85, 105, 0.08);
+  --hero-overlay: rgba(15, 23, 42, 0.1);
+  --hero-glass: rgba(255, 255, 255, 0.8);
   --hero-glass-strong: rgba(255, 255, 255, 0.95);
-  --orb-one: radial-gradient(circle, rgba(139, 0, 0, 0.6), transparent 70%);
-  --orb-two: radial-gradient(circle, rgba(20, 184, 166, 0.55), transparent 70%);
-  --orb-three: radial-gradient(circle, rgba(178, 34, 34, 0.55), transparent 70%);
-  --orb-four: radial-gradient(circle, rgba(12, 26, 43, 0.16), transparent 70%);
-  --panel-accent: linear-gradient(140deg, #fff5e8, #ffffff);
-  --work-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
-  --focus-ring: rgba(139, 0, 0, 0.25);
+  --orb-one: radial-gradient(circle, rgba(59, 130, 246, 0.42), transparent 70%);
+  --orb-two: radial-gradient(circle, rgba(15, 118, 110, 0.35), transparent 70%);
+  --orb-three: radial-gradient(circle, rgba(194, 65, 12, 0.3), transparent 70%);
+  --orb-four: radial-gradient(circle, rgba(15, 23, 42, 0.14), transparent 70%);
+  --panel-accent: linear-gradient(140deg, #f8fbff, #ffffff);
+  --work-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 252, 0.35));
+  --focus-ring: rgba(180, 35, 24, 0.2);
   --font-display: "Sora", "Trebuchet MS", sans-serif;
   --font-body: "Archivo", "Verdana", sans-serif;
 }
@@ -88,6 +88,35 @@
 
   .hero-frame img {
     filter: drop-shadow(0 26px 50px rgba(0, 0, 0, 0.5));
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .site-header {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .hero::before {
+    opacity: 0.24;
+  }
+
+  .nav-links a:hover,
+  .nav-links a:focus {
+    background: #fff;
+    border-color: var(--line-strong);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  }
+
+  .panel,
+  .service-card,
+  .product-card,
+  .process-step,
+  .auth-card,
+  .auth-box,
+  .contact-card,
+  .contact-form {
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+    border-color: rgba(15, 23, 42, 0.1);
   }
 }
 
