@@ -258,67 +258,16 @@ if (authPanel) {
   };
 
   const providerLogin = (provider, intent = "signup") => {
-    const popup = window.open(
-      "",
-      "oauthPopup",
-      "width=480,height=640,left=200,top=120"
-    );
+    const popupUrl = `/oauth-popup.html?provider=${encodeURIComponent(
+      provider
+    )}&intent=${encodeURIComponent(intent)}`;
+    const popup = window.open(popupUrl, "oauthPopup", "width=480,height=640,left=200,top=120");
 
     if (!popup) {
       setFeedback("Please allow popups to continue with social authentication.", true);
       return;
     }
-
-    try {
-      const doc = popup.document;
-      doc.open();
-      doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${provider} Login</title></head><body></body></html>`);
-      doc.close();
-
-      const root = doc.body;
-      root.style.margin = "0";
-      root.style.padding = "24px";
-      root.style.fontFamily = "Arial, sans-serif";
-      root.style.background = "#f8fafc";
-      root.style.color = "#0f172a";
-      root.style.lineHeight = "1.5";
-
-      const title = doc.createElement("h2");
-      title.textContent = `${provider} authentication`;
-      const info = doc.createElement("p");
-      info.textContent = `This demo simulates ${intent === "signin" ? "sign-in" : "sign-up"} with ${provider}.`;
-      const approve = doc.createElement("button");
-      approve.type = "button";
-      approve.textContent = intent === "signin" ? "Approve & Sign In" : "Approve & Sign Up";
-      approve.style.padding = "10px 14px";
-      approve.style.borderRadius = "10px";
-      approve.style.border = "1px solid #cbd5e1";
-      approve.style.background = "#111827";
-      approve.style.color = "#fff";
-      approve.style.cursor = "pointer";
-
-      approve.addEventListener("click", () => {
-        const payload = {
-          provider,
-          email: `${provider.toLowerCase()}_user@abitcons.com`,
-          name: `${provider} User`,
-          intent,
-        };
-        window.postMessage({ type: "ABIT_SOCIAL_AUTH", payload }, window.location.origin);
-        popup.close();
-      });
-
-      root.append(title, info, approve);
-      popup.focus();
-    } catch (error) {
-      const payload = {
-        provider,
-        email: `${provider.toLowerCase()}_user@abitcons.com`,
-        name: `${provider} User`,
-        intent,
-      };
-      completeSocialAuth(payload, intent);
-    }
+    popup.focus();
   };
 
   socialButtons.forEach((button) => {
