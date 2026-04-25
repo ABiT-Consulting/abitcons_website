@@ -36,8 +36,10 @@
     <meta name="theme-color" content="#060c14" media="(prefers-color-scheme: dark)" />
     <meta name="google-site-verification" content="OpCvAiXxuxiNsGi_Xb6Bfnpyi-OneGnFzHKLvQfNrR8" />
     <meta name="facebook-domain-verification" content="uokpu2p9tb066x6qegjyfjnefpzp38" />
-    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" />
-    <link rel="icon" href="/assets/favicon-192.png" sizes="192x192" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/assets/favicon-dark-32.png" sizes="32x32" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/assets/favicon-192.png" sizes="192x192" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/assets/favicon-dark-192.png" sizes="192x192" media="(prefers-color-scheme: dark)" />
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -83,7 +85,10 @@
     <header class="site-header" data-header>
       <div class="container nav">
         <a class="logo" href="#top">
-          <img src="/assets/logo.png" alt="ABiT logo" />
+          <picture>
+            <source srcset="/assets/logo-dark.png" media="(prefers-color-scheme: dark)" />
+            <img src="/assets/logo.png" alt="ABiT logo" />
+          </picture>
           <span>ABiT Consulting</span>
         </a>
         <div class="nav-menu" data-nav-menu>
@@ -468,7 +473,10 @@
       <div class="container footer-grid">
         <div>
           <a class="logo" href="#top">
-            <img src="/assets/logo.png" alt="ABiT logo" />
+            <picture>
+              <source srcset="/assets/logo-dark.png" media="(prefers-color-scheme: dark)" />
+              <img src="/assets/logo.png" alt="ABiT logo" />
+            </picture>
             <span>ABiT Consulting</span>
           </a>
           <p>Transform your business with SAP, Odoo, web, and mobile solutions.</p>
