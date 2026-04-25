@@ -1,5 +1,72 @@
 import "./style.css";
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
+const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
+
+const loadScript = (src) =>
+  new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
+        once: true,
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        resolve();
+      },
+      { once: true }
+    );
+    script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
+      once: true,
+    });
+    document.head.appendChild(script);
+  });
+
+const initGa4 = () => {
+  if (!gaMeasurementId) {
+    return;
+  }
+
+  loadScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaMeasurementId)}`)
+    .then(() => {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
+
+      window.gtag("js", new Date());
+      window.gtag("config", gaMeasurementId, { send_page_view: false });
+
+      const trackPageView = () => {
+        window.gtag("event", "page_view", {
+          page_location: window.location.href,
+          page_path: `${window.location.pathname}${window.location.hash || ""}`,
+          page_title: document.title,
+        });
+      };
+
+      trackPageView();
+      window.addEventListener("hashchange", trackPageView);
+    })
+    .catch(() => {
+      // Analytics is optional; fail silently for users.
+    });
+};
+
+initGa4();
+
 const header = document.querySelector("[data-header]");
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navMenu = document.querySelector("[data-nav-menu]");
@@ -129,6 +196,10 @@ if (authPanel) {
 
   const storageKey = "abit-auth-user";
 
+  let googleTokenClient = null;
+  let googleClientReady = false;
+  let googleClientLoading = null;
+
   const setFeedback = (message, isError = false) => {
     if (!feedback) {
       return;
@@ -180,6 +251,134 @@ if (authPanel) {
 
   const storedUsers = JSON.parse(localStorage.getItem("abit-auth-users") || "[]");
   let users = Array.isArray(storedUsers) ? storedUsers : [];
+
+  const upsertSocialUser = (socialUser) => {
+    const existingIndex = users.findIndex((user) => user.email === socialUser.email);
+    if (existingIndex > -1) {
+      users[existingIndex] = { ...users[existingIndex], ...socialUser };
+    } else {
+      users = [...users, socialUser];
+    }
+    localStorage.setItem("abit-auth-users", JSON.stringify(users));
+  };
+
+  const completeSocialAuth = (payload, intent = "signup") => {
+    if (!payload?.email) {
+      setFeedback("Social authentication failed. Please try again.", true);
+      return;
+    }
+
+    const socialUser = {
+      name: payload.name,
+      email: payload.email,
+      provider: payload.provider,
+      googleSub: payload.googleSub,
+    };
+
+    upsertSocialUser(socialUser);
+    persistUser(socialUser);
+    const modeLabel = intent === "signin" ? "Sign-in" : "Sign-up";
+    setFeedback(`${modeLabel} with ${payload.provider} completed successfully.`);
+    if (window.location.hash !== "#account-access") {
+      window.location.hash = "#account-access";
+    }
+  };
+
+  const ensureGoogleClient = () => {
+    if (!googleClientId) {
+      return Promise.reject(
+        new Error("Google sign-in is not configured yet. Please add VITE_GOOGLE_CLIENT_ID.")
+      );
+    }
+
+    if (googleClientReady && googleTokenClient) {
+      return Promise.resolve();
+    }
+
+    if (googleClientLoading) {
+      return googleClientLoading;
+    }
+
+    googleClientLoading = loadScript("https://accounts.google.com/gsi/client")
+      .then(() => {
+        if (!window.google?.accounts?.oauth2) {
+          throw new Error("Google authentication SDK failed to initialize.");
+        }
+
+        googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: "openid profile email",
+          callback: () => {},
+          error_callback: (error) => {
+            const details = error?.message || error?.type || "Google login was cancelled.";
+            setFeedback(`Google sign-in failed: ${details}`, true);
+          },
+        });
+
+        googleClientReady = true;
+      })
+      .finally(() => {
+        googleClientLoading = null;
+      });
+
+    return googleClientLoading;
+  };
+
+  const fetchGoogleProfile = async (accessToken) => {
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to read your Google profile.");
+    }
+
+    return response.json();
+  };
+
+  const providerLogin = async (provider, intent = "signup") => {
+    if (provider !== "google") {
+      setFeedback("Facebook login is not configured in this environment yet.", true);
+      return;
+    }
+
+    try {
+      await ensureGoogleClient();
+
+      await new Promise((resolve, reject) => {
+        googleTokenClient.callback = async (tokenResponse) => {
+          if (tokenResponse?.error) {
+            reject(new Error(tokenResponse.error_description || tokenResponse.error));
+            return;
+          }
+
+          try {
+            const profile = await fetchGoogleProfile(tokenResponse.access_token);
+            completeSocialAuth(
+              {
+                provider: "Google",
+                email: profile.email,
+                name: profile.name,
+                googleSub: profile.sub,
+              },
+              intent
+            );
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        googleTokenClient.requestAccessToken({ prompt: "select_account" });
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Google sign-in could not be completed. Please try again.";
+      setFeedback(message, true);
+    }
+  };
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -234,50 +433,6 @@ if (authPanel) {
     });
   });
 
-  const completeSocialAuth = (payload, intent = "signup") => {
-    if (!payload?.email) {
-      setFeedback("Social authentication failed. Please try again.", true);
-      return;
-    }
-
-    const socialUser = {
-      name: payload.name,
-      email: payload.email,
-      provider: payload.provider,
-    };
-
-    const existing = users.find((user) => user.email === socialUser.email);
-    if (!existing) {
-      users = [...users, socialUser];
-      localStorage.setItem("abit-auth-users", JSON.stringify(users));
-    }
-
-    persistUser(socialUser);
-    const modeLabel = intent === "signin" ? "Sign-in" : "Sign-up";
-    setFeedback(`${modeLabel} with ${payload.provider} completed successfully.`);
-  };
-
-  const providerLogin = (provider, intent = "signup") => {
-    const popupUrl = `/oauth-popup.html?provider=${encodeURIComponent(
-      provider
-    )}&intent=${encodeURIComponent(intent)}&t=${Date.now()}`;
-    const popup = window.open(popupUrl, "oauthPopup", "width=480,height=640,left=200,top=120");
-
-    if (!popup) {
-      setFeedback("Please allow popups to continue with social authentication.", true);
-      return;
-    }
-
-    // Some browsers occasionally keep reused popups at about:blank; force navigation.
-    try {
-      popup.location.replace(popupUrl);
-    } catch (error) {
-      // Ignore cross-window timing issues; the popup already has the target URL.
-    }
-
-    popup.focus();
-  };
-
   socialButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const provider = button.dataset.socialProvider;
@@ -288,15 +443,6 @@ if (authPanel) {
       const intent = button.dataset.authIntent || "signup";
       providerLogin(provider, intent);
     });
-  });
-
-  window.addEventListener("message", (event) => {
-    if (event.origin !== window.location.origin || event.data?.type !== "ABIT_SOCIAL_AUTH") {
-      return;
-    }
-
-    const payload = event.data.payload;
-    completeSocialAuth(payload, payload?.intent || "signup");
   });
 
   logoutButton?.addEventListener("click", () => {
