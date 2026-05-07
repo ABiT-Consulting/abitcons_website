@@ -73,6 +73,7 @@ initGa4();
 const header = document.querySelector("[data-header]");
 const navToggle = document.querySelector("[data-nav-toggle]");
 const navMenu = document.querySelector("[data-nav-menu]");
+const navLinks = Array.from(document.querySelectorAll('.nav-links a[href^="#"]'));
 
 const setNavState = (isOpen) => {
   if (!header || !navToggle) {
@@ -80,6 +81,7 @@ const setNavState = (isOpen) => {
   }
   header.classList.toggle("nav-open", isOpen);
   navToggle.setAttribute("aria-expanded", String(isOpen));
+  document.body.classList.toggle("nav-is-open", isOpen);
 };
 
 navToggle?.addEventListener("click", () => {
@@ -91,6 +93,25 @@ navMenu?.querySelectorAll("a").forEach((link) => {
   link.addEventListener("click", () => setNavState(false));
 });
 
+document.addEventListener("pointerdown", (event) => {
+  if (!header?.classList.contains("nav-open")) {
+    return;
+  }
+
+  const target = event.target;
+  if (target instanceof Node && header.contains(target)) {
+    return;
+  }
+
+  setNavState(false);
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setNavState(false);
+  }
+});
+
 const updateHeader = () => {
   if (!header) {
     return;
@@ -100,6 +121,42 @@ const updateHeader = () => {
 
 window.addEventListener("scroll", updateHeader, { passive: true });
 updateHeader();
+
+const sectionTargets = navLinks
+  .map((link) => document.querySelector(link.getAttribute("href")))
+  .filter(Boolean);
+
+if ("IntersectionObserver" in window && sectionTargets.length) {
+  const setActiveNavLink = (id) => {
+    navLinks.forEach((link) => {
+      const isActive = link.getAttribute("href") === `#${id}`;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  };
+
+  const navObserver = new IntersectionObserver(
+    (entries) => {
+      const visibleEntry = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (visibleEntry?.target?.id) {
+        setActiveNavLink(visibleEntry.target.id);
+      }
+    },
+    {
+      threshold: [0.18, 0.32, 0.55],
+      rootMargin: "-22% 0px -58% 0px",
+    }
+  );
+
+  sectionTargets.forEach((section) => navObserver.observe(section));
+}
 
 const revealElements = Array.from(document.querySelectorAll("[data-reveal]"));
 if ("IntersectionObserver" in window) {
@@ -501,7 +558,12 @@ if (authPanel) {
     setFeedback("You have been signed out.");
   });
 
-  const activeUser = JSON.parse(localStorage.getItem(storageKey) || "null");
+  let activeUser = null;
+  try {
+    activeUser = JSON.parse(localStorage.getItem(storageKey) || "null");
+  } catch {
+    localStorage.removeItem(storageKey);
+  }
   persistUser(activeUser);
   setAuthMode("signup");
 }
@@ -516,6 +578,8 @@ if (contactForm) {
   const captchaRefresh = captchaSlot?.querySelector("[data-captcha-refresh]");
   const submitButton = contactForm.querySelector('button[type="submit"]');
   const formNote = contactForm.querySelector("[data-form-note]");
+  const contactSubject = contactForm.querySelector('input[name="subject"]');
+  const contactMessage = contactForm.querySelector('textarea[name="message"]');
 
   const watchedFields = Array.from(contactForm.querySelectorAll("input, textarea")).filter(
     (field) => field !== captchaInput && field.type !== "submit" && field.type !== "button"
@@ -695,4 +759,25 @@ if (contactForm) {
   });
 
   updateCaptchaVisibility();
+
+  Array.from(document.querySelectorAll('.product-card .product-cta[href="#contact"]')).forEach(
+    (link) => {
+      link.addEventListener("click", () => {
+        const card = link.closest(".product-card");
+        const productName = card?.querySelector("h3")?.textContent?.trim() || "ABiT product";
+        if (contactSubject instanceof HTMLInputElement) {
+          contactSubject.value = `Demo request: ${productName}`;
+        }
+        if (contactMessage instanceof HTMLTextAreaElement) {
+          contactMessage.value = `I would like to schedule a demo for ${productName}. Please share availability, pricing, and implementation details.`;
+        }
+        updateCaptchaVisibility();
+        setFormNote(`Demo request prepared for ${productName}.`, false);
+
+        window.setTimeout(() => {
+          contactSubject?.focus({ preventScroll: true });
+        }, 450);
+      });
+    }
+  );
 }
