@@ -155,12 +155,7 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div class="backdrop" aria-hidden="true">
-      <span class="orb orb--one"></span>
-      <span class="orb orb--two"></span>
-      <span class="orb orb--three"></span>
-      <span class="orb orb--four"></span>
-    </div>
+    <div class="backdrop" aria-hidden="true"></div>
 
     <header class="site-header" data-header>
       <div class="container nav">
@@ -171,7 +166,7 @@
           </picture>
         </a>
         <div class="nav-menu" data-nav-menu>
-          <nav class="nav-links">
+          <nav class="nav-links" aria-label="Primary navigation">
             <a href="#about">About</a>
             <a href="#services">Services</a>
             <a href="#sap-cloud-hosting">SAP Cloud Hosting</a>
@@ -194,6 +189,15 @@
           aria-expanded="false"
           data-nav-toggle
         >
+          <svg class="nav-toggle__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M4 7h16M4 12h16M4 17h16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            ></path>
+          </svg>
           <span></span>
           <span></span>
         </button>
@@ -205,7 +209,12 @@
         <div class="container hero-grid">
           <div class="hero-content" data-reveal>
             <p class="eyebrow">ABiT Consulting</p>
-            <h1>SAP Business One Cloud Hosting That Keeps Your Operations Online.</h1>
+            <h1>
+              <span>SAP Business One</span>
+              <span>Cloud Hosting</span>
+              <span>That Keeps Your</span>
+              <span>Operations Online.</span>
+            </h1>
             <p class="lead">
               Host SAP Business One on secure cloud infrastructure with high availability, managed support, backup, and performance optimization for HANA and SQL workloads.
             </p>
@@ -218,6 +227,20 @@
               <span class="chip">Cloud + Bare Metal</span>
               <span class="chip">Worldwide Support</span>
             </div>
+            <div class="hero-proof" aria-label="ABiT delivery highlights">
+              <div>
+                <strong>99%</strong>
+                <span>SAP B1 integration expertise</span>
+              </div>
+              <div>
+                <strong>24/7</strong>
+                <span>Managed infrastructure monitoring</span>
+              </div>
+              <div>
+                <strong>Global</strong>
+                <span>Delivery for growing teams</span>
+              </div>
+            </div>
           </div>
           <div class="hero-media" data-reveal>
             <div class="hero-frame">
@@ -225,6 +248,20 @@
                 src="/assets/hero-pic.png"
                 alt="Illustration representing digital transformation"
               />
+              <div class="hero-dashboard" aria-label="Managed SAP hosting capabilities">
+                <div>
+                  <span>Availability</span>
+                  <strong>High uptime architecture</strong>
+                </div>
+                <div>
+                  <span>Backups</span>
+                  <strong>Encrypted recovery points</strong>
+                </div>
+                <div>
+                  <span>Support</span>
+                  <strong>ERP + infrastructure team</strong>
+                </div>
+              </div>
             </div>
             <div class="hero-card hero-card--top">
               <h3>Business Systems, Unified</h3>
@@ -418,7 +455,7 @@
             <p class="eyebrow">AI Operations &amp; Automation</p>
             <h2>Scale warehouse and business operations with practical AI.</h2>
             <p class="section-lead">
-              For teams modernizing operations at avikrons.com, we deliver AI-first workflows that
+              For teams modernizing warehouse and business operations, we deliver AI-first workflows that
               reduce manual effort, improve visibility, and speed up daily decision-making.
             </p>
           </div>
@@ -980,6 +1017,8 @@
                 Continue with Facebook
               </button>
             </div>
+            <p class="auth-status" data-auth-status>Not signed in</p>
+            <button class="btn ghost auth-logout" type="button" data-auth-logout hidden>Sign out</button>
             <p class="auth-feedback" aria-live="polite" data-auth-feedback></p>
           </div>
         </div>
@@ -1064,7 +1103,7 @@
             </label>
             <label>
               Message
-              <textarea name="message" rows="5" placeholder="Tell us about your project"></textarea>
+              <textarea name="message" rows="5" placeholder="Tell us about your project" required></textarea>
             </label>
             <div class="captcha-slot" aria-live="polite" data-math-captcha hidden>
               <p class="captcha-slot__label">Verification</p>
@@ -1163,8 +1202,8 @@
           <h4>Company</h4>
           <ul>
             <li><a href="#about">About</a></li>
-            <li><a href="#services">Services</a>
-            <a href="#sap-cloud-hosting">SAP Cloud Hosting</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#sap-cloud-hosting">SAP Cloud Hosting</a></li>
             <li><a href="#ai-operations">AI Operations</a></li>
             <li><a href="#products">Products</a></li>
             <li><a href="#work">Our Work</a></li>
