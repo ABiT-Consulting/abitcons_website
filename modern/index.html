@@ -357,6 +357,7 @@
             </p>
             <ul class="checklist">
               <li>Sign up with email and password</li>
+              <li>Register company profile and industry</li>
               <li>Sign in with Google</li>
               <li>Sign in with Facebook</li>
             </ul>
@@ -375,16 +376,54 @@
                 <input type="text" name="name" autocomplete="name" placeholder="Jane Doe" required />
               </label>
               <label>
-                Email
+                Work email
                 <input type="email" name="email" autocomplete="email" placeholder="you@company.com" required />
               </label>
+              <div class="auth-form__grid">
+                <label>
+                  Company name
+                  <input type="text" name="companyName" autocomplete="organization" placeholder="Company Ltd." required />
+                </label>
+                <label>
+                  Industry
+                  <select name="industry" required>
+                    <option value="">Select industry</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Retail & Distribution">Retail & Distribution</option>
+                    <option value="Trading">Trading</option>
+                    <option value="Services">Services</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Construction">Construction</option>
+                    <option value="Education">Education</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+              </div>
+              <div class="auth-form__grid">
+                <label>
+                  Company size
+                  <select name="companySize">
+                    <option value="">Select size</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="11-50">11-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-500">201-500 employees</option>
+                    <option value="500+">500+ employees</option>
+                  </select>
+                </label>
+                <label>
+                  Company website
+                  <input type="url" name="companyWebsite" autocomplete="url" placeholder="https://company.com" />
+                </label>
+              </div>
               <label>
                 Password
-                <input type="password" name="password" autocomplete="new-password" minlength="6" required />
+                <input type="password" name="password" autocomplete="new-password" minlength="8" required />
               </label>
               <label>
                 Confirm password
-                <input type="password" name="confirmPassword" autocomplete="new-password" minlength="6" required />
+                <input type="password" name="confirmPassword" autocomplete="new-password" minlength="8" required />
               </label>
               <button class="btn primary" type="submit">Create account</button>
             </form>
@@ -403,8 +442,8 @@
 
             <div class="auth-divider"><span>or continue with</span></div>
             <div class="social-auth">
-              <button class="social-auth__btn" type="button" data-social-provider="Google">Continue with Google</button>
-              <button class="social-auth__btn social-auth__btn--facebook" type="button" data-social-provider="Facebook">Continue with Facebook</button>
+              <button class="social-auth__btn" type="button" data-social-provider="google">Continue with Google</button>
+              <button class="social-auth__btn social-auth__btn--facebook" type="button" data-social-provider="facebook">Continue with Facebook</button>
             </div>
 
             <p class="auth-status" data-auth-status>Not signed in</p>

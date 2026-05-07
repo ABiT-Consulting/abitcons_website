@@ -152,8 +152,8 @@
         ]
       }
     </script>
-    <script type="module" crossorigin src="/assets/index-xGq73gIO.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DKVolTrj.css">
+    <script type="module" crossorigin src="/assets/index-BQW-NrNQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-NEdQ9EnQ.css">
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -887,6 +887,7 @@
             </p>
             <ul class="checklist">
               <li>One-click social sign-in with Google and Facebook</li>
+              <li>Company profile and industry captured at registration</li>
               <li>Secure account access from any device</li>
               <li>Fast onboarding for new customer teams</li>
             </ul>
@@ -911,6 +912,44 @@
                 Work email
                 <input type="email" name="email" placeholder="jane@company.com" autocomplete="email" required />
               </label>
+              <div class="auth-form__grid">
+                <label>
+                  Company name
+                  <input type="text" name="companyName" placeholder="Company Ltd." autocomplete="organization" required />
+                </label>
+                <label>
+                  Industry
+                  <select name="industry" required>
+                    <option value="">Select industry</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Retail & Distribution">Retail & Distribution</option>
+                    <option value="Trading">Trading</option>
+                    <option value="Services">Services</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Construction">Construction</option>
+                    <option value="Education">Education</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+              </div>
+              <div class="auth-form__grid">
+                <label>
+                  Company size
+                  <select name="companySize">
+                    <option value="">Select size</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="11-50">11-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-500">201-500 employees</option>
+                    <option value="500+">500+ employees</option>
+                  </select>
+                </label>
+                <label>
+                  Company website
+                  <input type="url" name="companyWebsite" placeholder="https://company.com" autocomplete="url" />
+                </label>
+              </div>
               <label>
                 Password
                 <input type="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required />
