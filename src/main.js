@@ -2,6 +2,9 @@ import "./style.css";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
 const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "";
+const productionApiBaseUrl = "https://abitcons.com";
+const apiBaseUrl = configuredApiBaseUrl || (import.meta.env.PROD ? productionApiBaseUrl : "");
 
 const loadScript = (src) =>
   new Promise((resolve, reject) => {
@@ -249,34 +252,44 @@ if (authPanel) {
     setFeedback("");
   };
 
-  const storedUsers = JSON.parse(localStorage.getItem("abit-auth-users") || "[]");
-  let users = Array.isArray(storedUsers) ? storedUsers : [];
+  const getErrorMessage = (error, fallback) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
-  const upsertSocialUser = (socialUser) => {
-    const existingIndex = users.findIndex((user) => user.email === socialUser.email);
-    if (existingIndex > -1) {
-      users[existingIndex] = { ...users[existingIndex], ...socialUser };
-    } else {
-      users = [...users, socialUser];
+  const apiRequest = async (path, payload) => {
+    let response;
+    try {
+      response = await fetch(`${apiBaseUrl}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      throw new Error("Account server is unavailable. Please start the backend server.");
     }
-    localStorage.setItem("abit-auth-users", JSON.stringify(users));
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Account request could not be completed.");
+    }
+
+    return data;
   };
 
-  const completeSocialAuth = (payload, intent = "signup") => {
+  const completeSocialAuth = async (payload, intent = "signup") => {
     if (!payload?.email) {
       setFeedback("Social authentication failed. Please try again.", true);
       return;
     }
 
-    const socialUser = {
+    const { user } = await apiRequest("/api/social-auth", {
       name: payload.name,
       email: payload.email,
       provider: payload.provider,
       googleSub: payload.googleSub,
-    };
+      accessToken: payload.accessToken,
+    });
 
-    upsertSocialUser(socialUser);
-    persistUser(socialUser);
+    persistUser(user);
     const modeLabel = intent === "signin" ? "Sign-in" : "Sign-up";
     setFeedback(`${modeLabel} with ${payload.provider} completed successfully.`);
     if (window.location.hash !== "#account-access") {
@@ -354,12 +367,13 @@ if (authPanel) {
 
           try {
             const profile = await fetchGoogleProfile(tokenResponse.access_token);
-            completeSocialAuth(
+            await completeSocialAuth(
               {
                 provider: "Google",
                 email: profile.email,
                 name: profile.name,
                 googleSub: profile.sub,
+                accessToken: tokenResponse.access_token,
               },
               intent
             );
@@ -387,11 +401,12 @@ if (authPanel) {
   });
 
   forms.forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const email = form.elements.email?.value?.trim().toLowerCase() ?? "";
       const password = form.elements.password?.value ?? "";
+      const submitButton = form.querySelector('button[type="submit"]');
 
       if (!email || !password) {
         setFeedback("Email and password are required.", true);
@@ -400,36 +415,72 @@ if (authPanel) {
 
       if (form.dataset.authForm === "signup") {
         const name = form.elements.name?.value?.trim() ?? "";
+        const companyName = form.elements.companyName?.value?.trim() ?? "";
+        const industry = form.elements.industry?.value?.trim() ?? "";
+        const companySize = form.elements.companySize?.value?.trim() ?? "";
+        const companyWebsite = form.elements.companyWebsite?.value?.trim() ?? "";
         const confirmPassword = form.elements.confirmPassword?.value ?? "";
+
+        if (!name || !companyName || !industry) {
+          setFeedback("Full name, company name, and industry are required.", true);
+          return;
+        }
 
         if (password !== confirmPassword) {
           setFeedback("Passwords do not match. Please try again.", true);
           return;
         }
 
-        if (users.some((user) => user.email === email)) {
-          setFeedback("This email is already registered. Please sign in.", true);
-          return;
+        if (submitButton) {
+          submitButton.disabled = true;
         }
 
-        const newUser = { name, email, password, provider: "Email" };
-        users = [...users, newUser];
-        localStorage.setItem("abit-auth-users", JSON.stringify(users));
-        persistUser(newUser);
-        setFeedback("Sign-up successful. Your account is ready.");
+        try {
+          const { user } = await apiRequest("/api/register", {
+            name,
+            email,
+            password,
+            company: {
+              name: companyName,
+              industry,
+              size: companySize,
+              website: companyWebsite,
+            },
+          });
+
+          persistUser(user);
+          setFeedback(`Sign-up successful. ${companyName} is registered under ${industry}.`);
+          form.reset();
+        } catch (error) {
+          setFeedback(
+            getErrorMessage(error, "Registration could not be completed. Please try again."),
+            true
+          );
+        } finally {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+
+        return;
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      try {
+        const { user } = await apiRequest("/api/signin", { email, password });
+        persistUser(user);
+        setFeedback("Signed in successfully. Welcome back.");
         form.reset();
-        return;
+      } catch (error) {
+        setFeedback(getErrorMessage(error, "Sign-in could not be completed. Please try again."), true);
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
       }
-
-      const user = users.find((item) => item.email === email && item.password === password);
-      if (!user) {
-        setFeedback("Invalid credentials. Please try again.", true);
-        return;
-      }
-
-      persistUser(user);
-      setFeedback("Signed in successfully. Welcome back.");
-      form.reset();
     });
   });
 
