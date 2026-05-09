@@ -281,11 +281,18 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
 .logo picture, .logo img { display: block; line-height: 0; }
 .site-header .logo img {
   height: 52px; width: auto; object-fit: contain;
-  filter: saturate(1.06) contrast(1.04) drop-shadow(0 6px 14px rgba(11, 27, 59, 0.12));
+  filter:
+    saturate(1.12)
+    contrast(1.06)
+    drop-shadow(0 8px 18px rgba(37, 99, 235, 0.18))
+    drop-shadow(0 2px 5px rgba(11, 27, 59, 0.14));
   transition: transform 0.3s ease;
 }
 .site-header .logo:hover img { transform: scale(1.03); }
-.site-footer .logo img { height: 46px; }
+.site-footer .logo img {
+  height: 46px;
+  filter: saturate(1.08) contrast(1.04) drop-shadow(0 8px 18px rgba(37, 99, 235, 0.16));
+}
 
 .nav-menu {
   display: flex; align-items: center; justify-content: flex-end;
