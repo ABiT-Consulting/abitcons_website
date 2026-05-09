@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" role="img" aria-label="Diamond Paints">
+  <g transform="translate(14, 30)">
+    <polygon points="0,0 11,-13 22,0 11,13" fill="#D7261E"/>
+  </g>
+  <text x="46" y="36" font-family="'Sora','Inter',system-ui,sans-serif"
+        font-weight="800" font-size="20" letter-spacing="-0.5"
+        fill="#1a1a1a">Diamond</text>
+  <text x="46" y="52" font-family="'Archivo','Inter',system-ui,sans-serif"
+        font-weight="600" font-size="9" letter-spacing="2.4"
+        fill="#D7261E">PAINTS</text>
+</svg>
