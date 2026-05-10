@@ -178,6 +178,7 @@
             <a href="#expertise">Expertise</a>
             <a href="#work">Work</a>
             <a href="#account-access">Sign In</a>
+            <a href="#support-portal">Support</a>
             <a href="#contact">Contact</a>
           </nav>
           <div class="nav-actions">
@@ -1025,7 +1026,7 @@
                 </label>
                 <label>
                   Company website
-                  <input type="url" name="companyWebsite" placeholder="https://company.com" autocomplete="url" />
+                  <input type="text" name="companyWebsite" placeholder="company.com" autocomplete="url" inputmode="url" />
                 </label>
               </div>
               <label>
@@ -1063,6 +1064,103 @@
             <p class="auth-status" data-auth-status>Not signed in</p>
             <button class="btn ghost auth-logout" type="button" data-auth-logout hidden>Sign out</button>
             <p class="auth-feedback" aria-live="polite" data-auth-feedback></p>
+          </div>
+        </div>
+      </section>
+
+
+      <section class="support-portal" id="support-portal" data-support-portal>
+        <div class="container">
+          <div class="section-header" data-reveal>
+            <p class="eyebrow">Support Portal</p>
+            <h2>Track tickets, project progress, and open tasks from Odoo.</h2>
+            <p class="section-lead">
+              Your customer workspace connects directly with ABiT's Odoo helpdesk and project
+              delivery boards, so updates stay in one source of truth.
+            </p>
+          </div>
+
+          <div class="support-shell" data-reveal>
+            <aside class="support-panel support-summary-panel">
+              <div>
+                <p class="eyebrow">Customer workspace</p>
+                <h3 data-support-user>Sign in to view your workspace.</h3>
+                <p data-support-copy>
+                  Use the customer account above to load your support tickets, active project
+                  status, and assigned delivery tasks.
+                </p>
+              </div>
+              <div class="support-actions">
+                <a class="btn outline" href="#account-access">Account access</a>
+              </div>
+              <div class="support-metrics" data-support-metrics>
+                <div><strong>-</strong><span>Open tickets</span></div>
+                <div><strong>-</strong><span>Active projects</span></div>
+                <div><strong>-</strong><span>Open tasks</span></div>
+                <div><strong>-</strong><span>Blocked items</span></div>
+              </div>
+            </aside>
+
+            <div class="support-panel support-workspace">
+              <p class="support-alert" data-support-alert aria-live="polite">
+                Sign in to load your Odoo support workspace.
+              </p>
+
+              <form class="support-ticket-form" data-support-ticket-form>
+                <div class="support-form-grid">
+                  <label>
+                    Ticket subject
+                    <input type="text" name="subject" placeholder="Briefly describe the issue" maxlength="120" required />
+                  </label>
+                  <label>
+                    Priority
+                    <select name="priority">
+                      <option value="1">Normal</option>
+                      <option value="2">High</option>
+                      <option value="3">Urgent</option>
+                      <option value="0">Low</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Details
+                  <textarea name="message" rows="5" placeholder="Share the module, screen, expected result, and anything you already tried." required></textarea>
+                </label>
+                <button class="btn primary" type="submit">Create Support Ticket</button>
+              </form>
+
+              <div class="support-columns">
+                <section class="support-list-block" aria-labelledby="support-tickets-title">
+                  <div class="support-list-header">
+                    <h3 id="support-tickets-title">Tickets</h3>
+                    <span data-support-ticket-count>0</span>
+                  </div>
+                  <div class="support-list" data-support-tickets>
+                    <p class="support-empty">No tickets loaded yet.</p>
+                  </div>
+                </section>
+
+                <section class="support-list-block" aria-labelledby="support-projects-title">
+                  <div class="support-list-header">
+                    <h3 id="support-projects-title">Projects</h3>
+                    <span data-support-project-count>0</span>
+                  </div>
+                  <div class="support-list" data-support-projects>
+                    <p class="support-empty">No project status loaded yet.</p>
+                  </div>
+                </section>
+
+                <section class="support-list-block support-list-block--wide" aria-labelledby="support-tasks-title">
+                  <div class="support-list-header">
+                    <h3 id="support-tasks-title">Tasks</h3>
+                    <span data-support-task-count>0</span>
+                  </div>
+                  <div class="support-list support-task-list" data-support-tasks>
+                    <p class="support-empty">No task updates loaded yet.</p>
+                  </div>
+                </section>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1252,6 +1350,7 @@
             <li><a href="#ai-operations">AI Operations</a></li>
             <li><a href="#products">Products</a></li>
             <li><a href="#work">Our Work</a></li>
+            <li><a href="#support-portal">Support Portal</a></li>
             <li><a href="/career/">Careers</a></li>
             <li><a href="/blogs/">Blogs</a></li>
           </ul>
@@ -1288,4 +1387,3 @@
 
   </body>
 </html>
-

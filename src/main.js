@@ -1,10 +1,56 @@
 import "./style.css";
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
+const rawGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
+const isPlaceholderGoogleId =
+  !rawGoogleClientId ||
+  rawGoogleClientId === "your-google-client-id.apps.googleusercontent.com" ||
+  !rawGoogleClientId.endsWith(".apps.googleusercontent.com");
+const googleClientId = isPlaceholderGoogleId ? "" : rawGoogleClientId;
 const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "";
 const productionApiBaseUrl = "https://abitcons.com";
 const apiBaseUrl = configuredApiBaseUrl || (import.meta.env.PROD ? productionApiBaseUrl : "");
+const authStorageKey = "abit-auth-user";
+
+const readStoredAuthUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem(authStorageKey) || "null");
+  } catch {
+    localStorage.removeItem(authStorageKey);
+    return null;
+  }
+};
+
+const getStoredAuthToken = () => readStoredAuthUser()?.sessionToken || "";
+
+const apiJsonRequest = async (path, { method = "GET", payload = null, auth = false } = {}) => {
+  const headers = { "Content-Type": "application/json" };
+  if (auth) {
+    const token = getStoredAuthToken();
+    if (!token) {
+      throw new Error("Please sign in to continue.");
+    }
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let response;
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      method,
+      headers,
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
+    });
+  } catch {
+    throw new Error("Account server is unavailable. Please start the backend server.");
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Request could not be completed.");
+  }
+
+  return data;
+};
 
 const loadScript = (src) =>
   new Promise((resolve, reject) => {
@@ -247,14 +293,30 @@ if (videoModal) {
 
 const authPanel = document.querySelector("[data-auth-panel]");
 if (authPanel) {
+  // Hide social-auth section if no providers are configured (prevents
+  // visitors hitting Google's "invalid_client" error popup in production).
+  const facebookConfigured = false; // not wired up yet
+  if (!googleClientId) {
+    const googleBtn = authPanel.querySelector('[data-social-provider="google"]');
+    if (googleBtn) googleBtn.hidden = true;
+  }
+  if (!facebookConfigured) {
+    const fbBtn = authPanel.querySelector('[data-social-provider="facebook"]');
+    if (fbBtn) fbBtn.hidden = true;
+  }
+  if (!googleClientId && !facebookConfigured) {
+    const divider = authPanel.querySelector(".auth-divider");
+    const social = authPanel.querySelector(".social-auth");
+    if (divider) divider.hidden = true;
+    if (social) social.hidden = true;
+  }
+
   const tabs = Array.from(authPanel.querySelectorAll("[data-auth-tab]"));
   const forms = Array.from(authPanel.querySelectorAll("[data-auth-form]"));
   const feedback = authPanel.querySelector("[data-auth-feedback]");
   const authStatus = authPanel.querySelector("[data-auth-status]");
   const logoutButton = authPanel.querySelector("[data-auth-logout]");
   const socialButtons = Array.from(authPanel.querySelectorAll("[data-social-provider]"));
-
-  const storageKey = "abit-auth-user";
 
   let googleTokenClient = null;
   let googleClientReady = false;
@@ -276,18 +338,20 @@ if (authPanel) {
 
   const persistUser = (user) => {
     if (user) {
-      localStorage.setItem(storageKey, JSON.stringify(user));
+      localStorage.setItem(authStorageKey, JSON.stringify(user));
       setAuthStatus(`Signed in as ${user.name || user.email || "authenticated user"}`);
       if (logoutButton) {
         logoutButton.hidden = false;
       }
     } else {
-      localStorage.removeItem(storageKey);
+      localStorage.removeItem(authStorageKey);
       setAuthStatus("Not signed in");
       if (logoutButton) {
         logoutButton.hidden = true;
       }
     }
+
+    window.dispatchEvent(new CustomEvent("abit-auth-change", { detail: user || null }));
   };
 
   const setAuthMode = (mode) => {
@@ -313,23 +377,7 @@ if (authPanel) {
     error instanceof Error && error.message ? error.message : fallback;
 
   const apiRequest = async (path, payload) => {
-    let response;
-    try {
-      response = await fetch(`${apiBaseUrl}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      throw new Error("Account server is unavailable. Please start the backend server.");
-    }
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || "Account request could not be completed.");
-    }
-
-    return data;
+    return apiJsonRequest(path, { method: "POST", payload });
   };
 
   const completeSocialAuth = async (payload, intent = "signup") => {
@@ -559,13 +607,312 @@ if (authPanel) {
   });
 
   let activeUser = null;
-  try {
-    activeUser = JSON.parse(localStorage.getItem(storageKey) || "null");
-  } catch {
-    localStorage.removeItem(storageKey);
-  }
+  activeUser = readStoredAuthUser();
   persistUser(activeUser);
   setAuthMode("signup");
+}
+
+const supportPortal = document.querySelector("[data-support-portal]");
+if (supportPortal) {
+  const ticketForm = supportPortal.querySelector("[data-support-ticket-form]");
+  const alertBox = supportPortal.querySelector("[data-support-alert]");
+  const userHeading = supportPortal.querySelector("[data-support-user]");
+  const userCopy = supportPortal.querySelector("[data-support-copy]");
+  const metrics = supportPortal.querySelector("[data-support-metrics]");
+  const ticketsList = supportPortal.querySelector("[data-support-tickets]");
+  const projectsList = supportPortal.querySelector("[data-support-projects]");
+  const tasksList = supportPortal.querySelector("[data-support-tasks]");
+  const ticketCount = supportPortal.querySelector("[data-support-ticket-count]");
+  const projectCount = supportPortal.querySelector("[data-support-project-count]");
+  const taskCount = supportPortal.querySelector("[data-support-task-count]");
+  const supportRefreshMs = 60_000;
+  let supportRefreshTimer = null;
+  let isSupportLoading = false;
+  let queuedSupportRefresh = false;
+
+  const escapeText = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const formatSyncTime = (value) => {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  };
+
+  const setAlert = (message, isError = false) => {
+    if (!alertBox) {
+      return;
+    }
+    alertBox.textContent = message;
+    alertBox.classList.toggle("is-error", isError);
+  };
+
+  const setFormDisabled = (disabled) => {
+    ticketForm
+      ?.querySelectorAll("input, select, textarea, button")
+      .forEach((field) => {
+        field.disabled = disabled;
+      });
+  };
+
+  const renderMetrics = (summary = {}) => {
+    if (!metrics) {
+      return;
+    }
+    const items = [
+      ["Open tickets", summary.openTickets ?? "-"],
+      ["Active projects", summary.activeProjects ?? "-"],
+      ["Open tasks", summary.activeTasks ?? "-"],
+      ["Blocked items", summary.blockedItems ?? "-"],
+    ];
+    metrics.innerHTML = items
+      .map(
+        ([label, value]) =>
+          `<div><strong>${escapeText(value)}</strong><span>${escapeText(label)}</span></div>`
+      )
+      .join("");
+  };
+
+  const itemMeta = (items) =>
+    `<div class="support-meta">${items
+      .filter(Boolean)
+      .map(([label, value, variant = ""]) => {
+        const className = variant ? ` support-pill--${variant}` : "";
+        return `<span class="support-pill${className}">${escapeText(label)}: ${escapeText(value)}</span>`;
+      })
+      .join("")}</div>`;
+
+  const renderTickets = (tickets = []) => {
+    if (ticketCount) ticketCount.textContent = String(tickets.length);
+    if (!ticketsList) return;
+    if (!tickets.length) {
+      ticketsList.innerHTML = '<p class="support-empty">No support tickets found for this account.</p>';
+      return;
+    }
+
+    ticketsList.innerHTML = tickets
+      .map((ticket) => {
+        const isUrgent = /urgent|high/i.test(ticket.priority || "");
+        const isBlocked = /blocked/i.test(ticket.state || "");
+        return `<article class="support-item">
+          <h4>${escapeText(ticket.title)}</h4>
+          ${itemMeta([
+            ["Stage", ticket.stage],
+            ["State", ticket.state, isBlocked ? "blocked" : ""],
+            ["Priority", ticket.priority, isUrgent ? "urgent" : ""],
+            ticket.project ? ["Project", ticket.project] : null,
+          ])}
+          <p>Owner: ${escapeText(ticket.owner || "ABiT Team")}</p>
+          <p>Updated ${escapeText(formatDate(ticket.updatedAt) || "recently")}</p>
+        </article>`;
+      })
+      .join("");
+  };
+
+  const renderProjects = (projects = []) => {
+    if (projectCount) projectCount.textContent = String(projects.length);
+    if (!projectsList) return;
+    if (!projects.length) {
+      projectsList.innerHTML = '<p class="support-empty">No active projects found for this account.</p>';
+      return;
+    }
+
+    projectsList.innerHTML = projects
+      .map(
+        (project) => `<article class="support-item">
+          <h4>${escapeText(project.title)}</h4>
+          ${itemMeta([
+            ["Stage", project.stage],
+            ["Owner", project.owner],
+            ["Open tasks", project.openTasks],
+          ])}
+          <div class="support-progress" aria-label="${escapeText(project.progress)}% complete">
+            <span style="--value: ${Number(project.progress || 0)}%"></span>
+          </div>
+          <p>${escapeText(project.progress || 0)}% complete</p>
+        </article>`
+      )
+      .join("");
+  };
+
+  const renderTasks = (tasks = []) => {
+    if (taskCount) taskCount.textContent = String(tasks.length);
+    if (!tasksList) return;
+    if (!tasks.length) {
+      tasksList.innerHTML = '<p class="support-empty">No active tasks found for this account.</p>';
+      return;
+    }
+
+    tasksList.innerHTML = tasks
+      .map(
+        (task) => `<article class="support-item">
+          <h4>${escapeText(task.title)}</h4>
+          ${itemMeta([
+            ["Stage", task.stage],
+            task.project ? ["Project", task.project] : null,
+            task.deadline ? ["Deadline", formatDate(task.deadline)] : null,
+            ["Remaining", `${Number(task.remainingHours || 0).toFixed(1)}h`],
+          ])}
+          <p>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</p>
+        </article>`
+      )
+      .join("");
+  };
+
+  const renderSignedOut = () => {
+    if (userHeading) userHeading.textContent = "Sign in to view your workspace.";
+    if (userCopy) {
+      userCopy.textContent =
+        "Use the customer account above to load your support tickets, active project status, and assigned delivery tasks.";
+    }
+    renderMetrics();
+    renderTickets([]);
+    renderProjects([]);
+    renderTasks([]);
+    setFormDisabled(true);
+    setAlert("Sign in to load your Odoo support workspace.");
+  };
+
+  const clearSupportRefresh = () => {
+    if (supportRefreshTimer) {
+      window.clearInterval(supportRefreshTimer);
+      supportRefreshTimer = null;
+    }
+  };
+
+  const startSupportRefresh = () => {
+    clearSupportRefresh();
+    const user = readStoredAuthUser();
+    if (!user?.sessionToken) {
+      return;
+    }
+
+    supportRefreshTimer = window.setInterval(() => {
+      if (!document.hidden) {
+        loadSupportOverview({ silent: true });
+      }
+    }, supportRefreshMs);
+  };
+
+  const loadSupportOverview = async ({ silent = false } = {}) => {
+    const user = readStoredAuthUser();
+    if (!user?.sessionToken) {
+      clearSupportRefresh();
+      renderSignedOut();
+      return;
+    }
+
+    if (isSupportLoading) {
+      queuedSupportRefresh = true;
+      return;
+    }
+
+    isSupportLoading = true;
+    if (userHeading) userHeading.textContent = `${user.company?.name || user.name || "Customer"} workspace`;
+    if (userCopy) {
+      userCopy.textContent = `Signed in as ${user.email}. Your updates are synced from Odoo.`;
+    }
+    setFormDisabled(false);
+    if (!silent) {
+      setAlert("Loading support workspace from Odoo...");
+    }
+
+    try {
+      const overview = await apiJsonRequest("/api/support/overview", { auth: true });
+      renderMetrics(overview.summary);
+      renderTickets(overview.tickets);
+      renderProjects(overview.projects);
+      renderTasks(overview.tasks);
+      const updated = formatSyncTime(overview.summary?.lastUpdated);
+      setAlert(`Workspace synced${updated ? ` ${updated}` : ""}.`);
+    } catch (error) {
+      setAlert(error instanceof Error ? error.message : "Support workspace could not be loaded.", true);
+    } finally {
+      isSupportLoading = false;
+      if (queuedSupportRefresh) {
+        queuedSupportRefresh = false;
+        loadSupportOverview({ silent: true });
+      }
+    }
+  };
+
+  ticketForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const user = readStoredAuthUser();
+    if (!user?.sessionToken) {
+      setAlert("Please sign in before creating a support ticket.", true);
+      return;
+    }
+
+    const submitButton = ticketForm.querySelector('button[type="submit"]');
+    const payload = {
+      subject: ticketForm.elements.subject?.value?.trim() || "",
+      priority: ticketForm.elements.priority?.value || "1",
+      message: ticketForm.elements.message?.value?.trim() || "",
+    };
+
+    if (!payload.subject || !payload.message) {
+      setAlert("Ticket subject and details are required.", true);
+      return;
+    }
+
+    try {
+      if (submitButton) submitButton.disabled = true;
+      setAlert("Creating support ticket in Odoo...");
+      await apiJsonRequest("/api/support/tickets", {
+        method: "POST",
+        payload,
+        auth: true,
+      });
+      ticketForm.reset();
+      setAlert("Support ticket created. Refreshing your workspace...");
+      await loadSupportOverview();
+    } catch (error) {
+      setAlert(error instanceof Error ? error.message : "Support ticket could not be created.", true);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+
+  window.addEventListener("abit-auth-change", () => {
+    loadSupportOverview();
+    startSupportRefresh();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      loadSupportOverview({ silent: true });
+    }
+  });
+
+  loadSupportOverview();
+  startSupportRefresh();
 }
 
 const contactForm = document.querySelector(".contact-form");
