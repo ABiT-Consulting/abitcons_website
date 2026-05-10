@@ -8,9 +8,16 @@ const isPlaceholderGoogleId =
 const googleClientId = isPlaceholderGoogleId ? "" : rawGoogleClientId;
 const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "";
-const productionApiBaseUrl = "https://abitcons.com";
-const apiBaseUrl = configuredApiBaseUrl || (import.meta.env.PROD ? productionApiBaseUrl : "");
+const apiBaseUrl = configuredApiBaseUrl;
 const authStorageKey = "abit-auth-user";
+const phpApiFallbackRoutes = new Map([
+  ["/api/health", "/api/health.php"],
+  ["/api/register", "/api/register.php"],
+  ["/api/signin", "/api/signin.php"],
+  ["/api/social-auth", "/api/social-auth.php"],
+  ["/api/support/overview", "/api/support-overview.php"],
+  ["/api/support/tickets", "/api/support-ticket.php"],
+]);
 
 const readStoredAuthUser = () => {
   try {
@@ -23,6 +30,34 @@ const readStoredAuthUser = () => {
 
 const getStoredAuthToken = () => readStoredAuthUser()?.sessionToken || "";
 
+const parseApiResponse = async (response) => {
+  const contentType = response.headers.get("content-type") || "";
+  const rawBody = await response.text().catch(() => "");
+  let data = {};
+
+  if (contentType.includes("application/json") || rawBody.trim().startsWith("{")) {
+    try {
+      data = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      data = {};
+    }
+  }
+
+  return { data, rawBody };
+};
+
+const shouldTryPhpApiFallback = (path, response, rawBody) => {
+  if (configuredApiBaseUrl || !import.meta.env.PROD || response.status !== 404) {
+    return false;
+  }
+
+  if (!phpApiFallbackRoutes.has(path)) {
+    return false;
+  }
+
+  return !rawBody.trim().startsWith("{");
+};
+
 const apiJsonRequest = async (path, { method = "GET", payload = null, auth = false } = {}) => {
   const headers = { "Content-Type": "application/json" };
   if (auth) {
@@ -33,18 +68,26 @@ const apiJsonRequest = async (path, { method = "GET", payload = null, auth = fal
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const requestOptions = {
+    method,
+    headers,
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
+  };
+
   let response;
   try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      method,
-      headers,
-      ...(payload ? { body: JSON.stringify(payload) } : {}),
-    });
+    response = await fetch(`${apiBaseUrl}${path}`, requestOptions);
   } catch {
     throw new Error("Account server is unavailable. Please start the backend server.");
   }
 
-  const data = await response.json().catch(() => ({}));
+  let { data, rawBody } = await parseApiResponse(response);
+  if (shouldTryPhpApiFallback(path, response, rawBody)) {
+    const fallbackPath = phpApiFallbackRoutes.get(path);
+    response = await fetch(`${apiBaseUrl}${fallbackPath}`, requestOptions);
+    ({ data, rawBody } = await parseApiResponse(response));
+  }
+
   if (!response.ok) {
     throw new Error(data.error || "Request could not be completed.");
   }

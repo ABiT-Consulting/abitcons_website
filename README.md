@@ -14,9 +14,10 @@ SQLITE_PATH=data/abitcons.sqlite
 
 - `VITE_GOOGLE_CLIENT_ID` enables real Google sign-in on `#account-access`.
 - `VITE_GA_MEASUREMENT_ID` enables GA4 page view tracking, including hash route changes.
-- `VITE_API_BASE_URL` can point the frontend at a separate API host. Leave it empty locally so Vite proxies `/api/*` to `http://127.0.0.1:3000`. Production builds default API requests to `https://abitcons.com`.
+- `VITE_API_BASE_URL` can point the frontend at a separate API host. Leave it empty locally so Vite proxies `/api/*` to `http://127.0.0.1:3000`. Production builds use same-origin `/api/*` by default.
 - `PORT` controls the Node backend server port.
 - `SQLITE_PATH` controls where registration data is stored.
+- Static/PHP hosting can use the fallback endpoints copied from `public/api/*.php`. Set `ABIT_PORTAL_DATA_DIR` on the host to store portal accounts outside the web root; if it is unset, the PHP fallback writes to `../abit_portal_data` relative to the deployed web root.
 
 ## Google OAuth production setup
 
