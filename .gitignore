@@ -1,5 +1,6 @@
 data/*.sqlite
 data/*.sqlite-*
+abit_portal_data/
 .env
 .tmp_handle/*.sqlite
 .tmp_handle/*.sqlite-*
