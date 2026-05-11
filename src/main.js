@@ -958,6 +958,94 @@ if (supportPortal) {
   startSupportRefresh();
 }
 
+const heroPhotoShowcase = document.querySelector("[data-ai-artifact]");
+if (heroPhotoShowcase) {
+  const photoImage = heroPhotoShowcase.querySelector("[data-artifact-image]");
+  const quoteNode = heroPhotoShowcase.querySelector("[data-artifact-title]");
+  const categoryNode = heroPhotoShowcase.querySelector("[data-artifact-category]");
+  const refreshButton = heroPhotoShowcase.querySelector("[data-artifact-refresh]");
+
+  const photoScenes = [
+    {
+      category: "Cosmos / NASA Hubble",
+      quote: "Build with the patience of nature and the reach of the cosmos.",
+      src: "/assets/real-artifacts/hubble-pillars.jpg",
+      alt: "Hubble photograph of the Pillars of Creation in the Eagle Nebula",
+    },
+    {
+      category: "Cosmos / NASA Hubble",
+      quote: "Look farther than the brief; the strongest ideas arrive from deeper space.",
+      src: "/assets/real-artifacts/hubble-cosmic-pillars.jpg",
+      alt: "NASA Hubble view of cosmic pillars surrounded by stars and nebula light",
+    },
+    {
+      category: "Nature Photography",
+      quote: "Growth is quiet before it becomes visible; build the roots first.",
+      src: "/assets/real-artifacts/nature-mountain-lake.jpg",
+      alt: "Natural mountain lake landscape photograph",
+    },
+    {
+      category: "Nature Photography",
+      quote: "Nature scales through balance; systems should do the same.",
+      src: "/assets/real-artifacts/nature-forest.jpg",
+      alt: "Natural forest photography with dense green trees",
+    },
+    {
+      category: "Technology Photography",
+      quote: "Turn signal into structure, and structure into momentum.",
+      src: "/assets/real-artifacts/technology-circuit.jpg",
+      alt: "Close-up technology circuit board photograph",
+    },
+    {
+      category: "Technology Photography",
+      quote: "The best platforms feel invisible because every team moves faster.",
+      src: "/assets/real-artifacts/technology-datacenter.jpg",
+      alt: "Modern data center technology photograph",
+    },
+  ];
+
+  let previousSceneIndex = -1;
+
+  const choosePhotoScene = () => {
+    if (photoScenes.length <= 1) {
+      previousSceneIndex = 0;
+      return photoScenes[0];
+    }
+
+    let nextSceneIndex = Math.floor(Math.random() * photoScenes.length);
+    if (nextSceneIndex === previousSceneIndex) {
+      nextSceneIndex = (nextSceneIndex + 1) % photoScenes.length;
+    }
+    previousSceneIndex = nextSceneIndex;
+    return photoScenes[nextSceneIndex];
+  };
+
+  const applyPhotoScene = (scene = choosePhotoScene()) => {
+    if (quoteNode) {
+      quoteNode.textContent = scene.quote;
+    }
+    if (categoryNode) {
+      categoryNode.textContent = scene.category;
+    }
+    if (!(photoImage instanceof HTMLImageElement)) {
+      return;
+    }
+
+    photoImage.classList.add("is-changing");
+    window.setTimeout(() => {
+      photoImage.src = scene.src;
+      photoImage.alt = scene.alt;
+      photoImage.onload = () => photoImage.classList.remove("is-changing");
+      if (photoImage.complete) {
+        photoImage.classList.remove("is-changing");
+      }
+    }, 80);
+  };
+
+  refreshButton?.addEventListener("click", () => applyPhotoScene());
+  applyPhotoScene();
+}
+
 const contactForm = document.querySelector(".contact-form");
 if (contactForm) {
   const captchaSlot = contactForm.querySelector("[data-math-captcha]");
