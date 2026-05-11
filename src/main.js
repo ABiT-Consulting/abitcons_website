@@ -958,66 +958,156 @@ if (supportPortal) {
   startSupportRefresh();
 }
 
-const heroPhotoShowcase = document.querySelector("[data-ai-artifact]");
+const heroPhotoShowcase = document.querySelector("[data-photo-showcase]");
 if (heroPhotoShowcase) {
-  const photoImage = heroPhotoShowcase.querySelector("[data-artifact-image]");
-  const quoteNode = heroPhotoShowcase.querySelector("[data-artifact-title]");
-  const categoryNode = heroPhotoShowcase.querySelector("[data-artifact-category]");
-  const refreshButton = heroPhotoShowcase.querySelector("[data-artifact-refresh]");
+  const photoImage = heroPhotoShowcase.querySelector("[data-photo-image]");
+  const quoteNode = heroPhotoShowcase.querySelector("[data-photo-title]");
+  const categoryNode = heroPhotoShowcase.querySelector("[data-photo-category]");
+  const autoRotateDelay = 5200;
+  const unsplash = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=3840&q=90`;
 
-  const photoScenes = [
+  const buildScenes = (category, quotes, photos) =>
+    photos.map((photo, index) => ({
+      category,
+      quote: quotes[index % quotes.length],
+      ...photo,
+    }));
+
+  const cosmosQuotes = [
+    "Build with the patience of nature and the reach of the cosmos.",
+    "Look farther than the brief; the strongest ideas arrive from deeper space.",
+    "Scale begins when vision is bigger than the visible horizon.",
+    "Every great platform starts as a signal in the dark.",
+    "The future rewards teams that map new constellations.",
+  ];
+  const natureQuotes = [
+    "Growth is quiet before it becomes visible; build the roots first.",
+    "Nature scales through balance; systems should do the same.",
+    "Durable progress is built like a forest: connected, resilient, alive.",
+    "Let clarity move like water through every process.",
+    "Strong foundations turn pressure into elevation.",
+  ];
+  const technologyQuotes = [
+    "Turn signal into structure, and structure into momentum.",
+    "The best platforms feel invisible because every team moves faster.",
+    "Technology wins when it simplifies the work behind ambition.",
+    "Build systems that think clearly when the business moves fast.",
+    "Intelligence becomes useful when it reaches the workflow.",
+  ];
+  const businessQuotes = [
+    "Great businesses align people, systems, and timing.",
+    "Execution turns strategy into trust.",
+    "A clear operating system gives every team more leverage.",
+    "Better decisions compound faster than better intentions.",
+    "When the workflow is clean, growth has room to move.",
+  ];
+
+  const cosmosPhotos = [
     {
-      category: "Cosmos / NASA Hubble",
-      quote: "Build with the patience of nature and the reach of the cosmos.",
-      src: "/assets/real-artifacts/hubble-pillars.jpg",
+      src: "https://www.nasa.gov/wp-content/uploads/2023/03/pillars_of_creation.jpg?w=3840",
       alt: "Hubble photograph of the Pillars of Creation in the Eagle Nebula",
     },
-    {
-      category: "Cosmos / NASA Hubble",
-      quote: "Look farther than the brief; the strongest ideas arrive from deeper space.",
-      src: "/assets/real-artifacts/hubble-cosmic-pillars.jpg",
-      alt: "NASA Hubble view of cosmic pillars surrounded by stars and nebula light",
-    },
-    {
-      category: "Nature Photography",
-      quote: "Growth is quiet before it becomes visible; build the roots first.",
-      src: "/assets/real-artifacts/nature-mountain-lake.jpg",
-      alt: "Natural mountain lake landscape photograph",
-    },
-    {
-      category: "Nature Photography",
-      quote: "Nature scales through balance; systems should do the same.",
-      src: "/assets/real-artifacts/nature-forest.jpg",
-      alt: "Natural forest photography with dense green trees",
-    },
-    {
-      category: "Technology Photography",
-      quote: "Turn signal into structure, and structure into momentum.",
-      src: "/assets/real-artifacts/technology-circuit.jpg",
-      alt: "Close-up technology circuit board photograph",
-    },
-    {
-      category: "Technology Photography",
-      quote: "The best platforms feel invisible because every team moves faster.",
-      src: "/assets/real-artifacts/technology-datacenter.jpg",
-      alt: "Modern data center technology photograph",
-    },
+    { src: unsplash("photo-1462331940025-496dfbfc7564"), alt: "Deep space galaxy photograph" },
+    { src: unsplash("photo-1446776811953-b23d57bd21aa"), alt: "Earth and space photography" },
+    { src: unsplash("photo-1454789548928-9efd52dc4031"), alt: "Star field and cosmic dust photography" },
+    { src: unsplash("photo-1465101162946-4377e57745c3"), alt: "Night sky full of stars" },
+    { src: unsplash("photo-1464802686167-b939a6910659"), alt: "Milky Way galaxy night sky" },
+    { src: unsplash("photo-1506318137071-a8e063b4bec0"), alt: "Cosmic sky and stars" },
+    { src: unsplash("photo-1534796636912-3b95b3ab5986"), alt: "Milky Way above a natural horizon" },
+    { src: unsplash("photo-1516339901601-2e1b62dc0c45"), alt: "Clear starry sky photography" },
+    { src: unsplash("photo-1419242902214-272b3f66ee7a"), alt: "Space nebula and star photography" },
+    { src: unsplash("photo-1538370965046-79c0d6907d47"), alt: "Astronomical sky photography" },
+    { src: unsplash("photo-1543722530-d2c3201371e7"), alt: "Moon and night sky photography" },
+    { src: unsplash("photo-1502134249126-9f3755a50d78"), alt: "Expansive cosmos and stars" },
+  ];
+
+  const naturePhotos = [
+    { src: unsplash("photo-1500530855697-b586d89ba3ee"), alt: "Mountain lake landscape photography" },
+    { src: unsplash("photo-1447752875215-b2761acb3c5d"), alt: "Dense forest nature photography" },
+    { src: unsplash("photo-1470071459604-3b5ec3a7fe05"), alt: "Misty forest and mountain landscape" },
+    { src: unsplash("photo-1506744038136-46273834b3fb"), alt: "Lake and mountain valley landscape" },
+    { src: unsplash("photo-1469474968028-56623f02e42e"), alt: "Sunlit mountain nature scene" },
+    { src: unsplash("photo-1433086966358-54859d0ed716"), alt: "Waterfall and lush nature photography" },
+    { src: unsplash("photo-1470770841072-f978cf4d019e"), alt: "Blue mountain lake landscape" },
+    { src: unsplash("photo-1500534314209-a25ddb2bd429"), alt: "Open desert and mountain landscape" },
+    { src: unsplash("photo-1475924156734-496f6cac6ec1"), alt: "Golden natural landscape at sunset" },
+    { src: unsplash("photo-1472214103451-9374bd1c798e"), alt: "Rolling green landscape photography" },
+    { src: unsplash("photo-1493246507139-91e8fad9978e"), alt: "Forest path and natural greenery" },
+    { src: unsplash("photo-1464822759023-fed622ff2c3b"), alt: "Snow mountain landscape photography" },
+    { src: unsplash("photo-1483728642387-6c3bdd6c93e5"), alt: "Alpine mountain and lake photography" },
+  ];
+
+  const technologyPhotos = [
+    { src: unsplash("photo-1518770660439-4636190af475"), alt: "Close-up circuit board technology photograph" },
+    { src: unsplash("photo-1558494949-ef010cbdcc31"), alt: "Modern data center technology photography" },
+    { src: unsplash("photo-1485827404703-89b55fcc595e"), alt: "Advanced robotics technology photography" },
+    { src: unsplash("photo-1516116216624-53e697fedbea"), alt: "Futuristic technology infrastructure" },
+    { src: unsplash("photo-1550751827-4bd374c3f58b"), alt: "Computer hardware and circuit technology" },
+    { src: unsplash("photo-1451187580459-43490279c0fa"), alt: "Global network and digital technology" },
+    { src: unsplash("photo-1535223289827-42f1e9919769"), alt: "Immersive virtual reality technology" },
+    { src: unsplash("photo-1516321318423-f06f85e504b3"), alt: "Laptop technology in a modern workspace" },
+    { src: unsplash("photo-1504384308090-c894fdcc538d"), alt: "Server and cloud infrastructure photography" },
+    { src: unsplash("photo-1519389950473-47ba0277781c"), alt: "Development team working with technology" },
+    { src: unsplash("photo-1498050108023-c5249f4df085"), alt: "Software code on a development screen" },
+    { src: unsplash("photo-1531297484001-80022131f5a1"), alt: "Modern laptop technology close-up" },
+  ];
+
+  const businessPhotos = [
+    { src: unsplash("photo-1507679799987-c73779587ccf"), alt: "Business professional in a modern city" },
+    { src: unsplash("photo-1556761175-b413da4baf72"), alt: "Business team collaborating in a meeting" },
+    { src: unsplash("photo-1552664730-d307ca884978"), alt: "Business team planning a project together" },
+    { src: unsplash("photo-1521737604893-d14cc237f11d"), alt: "Business collaboration in a modern office" },
+    { src: unsplash("photo-1517048676732-d65bc937f952"), alt: "Team discussion around a business table" },
+    { src: unsplash("photo-1551836022-d5d88e9218df"), alt: "Business people working together" },
+    { src: unsplash("photo-1520607162513-77705c0f0d4a"), alt: "Business architecture and corporate skyline" },
+    { src: unsplash("photo-1486406146926-c627a92ad1ab"), alt: "Modern business skyscraper architecture" },
+    { src: unsplash("photo-1497366811353-6870744d04b2"), alt: "Bright modern business office" },
+    { src: unsplash("photo-1556761175-4b46a572b786"), alt: "Business meeting with documents and laptops" },
+    { src: unsplash("photo-1556761175-5973dc0f32e7"), alt: "Professional business team in discussion" },
+    { src: unsplash("photo-1556761175-129418cb2dfe"), alt: "Business strategy meeting photography" },
+  ];
+
+  const photoScenes = [
+    ...buildScenes("Cosmos / 4K Photography", cosmosQuotes, cosmosPhotos),
+    ...buildScenes("Nature / 4K Photography", natureQuotes, naturePhotos),
+    ...buildScenes("Technology / 4K Photography", technologyQuotes, technologyPhotos),
+    ...buildScenes("Business / 4K Photography", businessQuotes, businessPhotos),
   ];
 
   let previousSceneIndex = -1;
+  let sceneOrder = [];
+  let autoRotateTimer = 0;
+  let transitionToken = 0;
+  let preloadImage = null;
+
+  const shuffleSceneOrder = () => {
+    sceneOrder = photoScenes.map((_, index) => index);
+    for (let index = sceneOrder.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [sceneOrder[index], sceneOrder[randomIndex]] = [sceneOrder[randomIndex], sceneOrder[index]];
+    }
+    if (sceneOrder[0] === previousSceneIndex && sceneOrder.length > 1) {
+      [sceneOrder[0], sceneOrder[1]] = [sceneOrder[1], sceneOrder[0]];
+    }
+  };
 
   const choosePhotoScene = () => {
-    if (photoScenes.length <= 1) {
-      previousSceneIndex = 0;
-      return photoScenes[0];
+    if (sceneOrder.length === 0) {
+      shuffleSceneOrder();
     }
 
-    let nextSceneIndex = Math.floor(Math.random() * photoScenes.length);
-    if (nextSceneIndex === previousSceneIndex) {
-      nextSceneIndex = (nextSceneIndex + 1) % photoScenes.length;
+    previousSceneIndex = sceneOrder.shift() ?? 0;
+    return photoScenes[previousSceneIndex];
+  };
+
+  const preloadUpcomingPhoto = () => {
+    if (sceneOrder.length === 0 || !("Image" in window)) {
+      return;
     }
-    previousSceneIndex = nextSceneIndex;
-    return photoScenes[nextSceneIndex];
+
+    const upcomingScene = photoScenes[sceneOrder[0]];
+    preloadImage = new Image();
+    preloadImage.src = upcomingScene.src;
   };
 
   const applyPhotoScene = (scene = choosePhotoScene()) => {
@@ -1031,19 +1121,53 @@ if (heroPhotoShowcase) {
       return;
     }
 
+    const currentTransition = (transitionToken += 1);
     photoImage.classList.add("is-changing");
-    window.setTimeout(() => {
+    const nextImage = new Image();
+    nextImage.decoding = "async";
+    nextImage.onload = () => {
+      if (currentTransition !== transitionToken) {
+        return;
+      }
       photoImage.src = scene.src;
       photoImage.alt = scene.alt;
-      photoImage.onload = () => photoImage.classList.remove("is-changing");
-      if (photoImage.complete) {
+      window.requestAnimationFrame(() => {
+        photoImage.classList.remove("is-changing");
+      });
+      preloadUpcomingPhoto();
+    };
+    nextImage.onerror = () => {
+      if (currentTransition === transitionToken) {
         photoImage.classList.remove("is-changing");
       }
-    }, 80);
+    };
+    nextImage.src = scene.src;
   };
 
-  refreshButton?.addEventListener("click", () => applyPhotoScene());
+  const scheduleAutoRotate = () => {
+    window.clearTimeout(autoRotateTimer);
+    autoRotateTimer = window.setTimeout(() => {
+      applyPhotoScene();
+      scheduleAutoRotate();
+    }, autoRotateDelay);
+  };
+
+  const advancePhoto = () => {
+    applyPhotoScene();
+    scheduleAutoRotate();
+  };
+
+  heroPhotoShowcase.addEventListener("click", advancePhoto);
+  heroPhotoShowcase.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    advancePhoto();
+  });
+  document.addEventListener("visibilitychange", scheduleAutoRotate);
   applyPhotoScene();
+  scheduleAutoRotate();
 }
 
 const contactForm = document.querySelector(".contact-form");
