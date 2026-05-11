@@ -963,7 +963,7 @@ if (heroPhotoShowcase) {
   const photoImage = heroPhotoShowcase.querySelector("[data-photo-image]");
   const quoteNode = heroPhotoShowcase.querySelector("[data-photo-title]");
   const categoryNode = heroPhotoShowcase.querySelector("[data-photo-category]");
-  const autoRotateDelay = 5200;
+  const autoRotateDelay = 60000;
   const unsplash = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=3840&q=90`;
 
   const buildScenes = (category, quotes, photos) =>
@@ -1165,7 +1165,6 @@ if (heroPhotoShowcase) {
     event.preventDefault();
     advancePhoto();
   });
-  document.addEventListener("visibilitychange", scheduleAutoRotate);
   applyPhotoScene();
   scheduleAutoRotate();
 }
