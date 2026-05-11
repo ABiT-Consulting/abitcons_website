@@ -4,9 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "generate:seo": "node scripts/generate_seo_pages.mjs",
+    "prebuild": "npm run generate:seo",
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/build_site.mjs",
     "preview": "vite preview",
+    "preview:dist": "node scripts/serve_dist.mjs",
     "server": "node server/index.js",
     "start": "node server/index.js"
   },
