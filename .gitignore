@@ -4,3 +4,5 @@ abit_portal_data/
 .env
 .tmp_handle/*.sqlite
 .tmp_handle/*.sqlite-*
+.tmp_handle/*.png
+.tmp_handle/chrome-seo-profile-*/
