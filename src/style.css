@@ -494,10 +494,11 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   z-index: 2;
   top: -1.1rem;
   left: -1.2rem;
-  width: min(312px, 58%);
+  width: min(360px, 66%);
   display: grid;
   gap: 0.65rem;
-  padding: 0.72rem;
+  grid-template-rows: minmax(4.6rem, auto) auto;
+  padding: 0.82rem;
   background: color-mix(in oklab, var(--surface) 92%, transparent);
   border: 1px solid color-mix(in oklab, var(--line) 80%, #fff);
   border-radius: var(--radius);
@@ -517,8 +518,10 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
 }
 .hero-photo-showcase__copy {
   display: grid;
+  align-content: start;
   gap: 0.22rem;
   padding: 0 0.1rem;
+  min-height: 4.6rem;
 }
 .hero-photo-showcase__copy span {
   color: var(--primary);
@@ -532,7 +535,7 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   margin: 0;
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: clamp(0.86rem, 1.2vw, 1rem);
+  font-size: clamp(0.9rem, 1.25vw, 1.05rem);
   font-weight: 700;
   line-height: 1.25;
   text-wrap: balance;
@@ -542,11 +545,12 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   border-radius: calc(var(--radius) - 8px);
   background: #020617;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  height: clamp(174px, 16.5vw, 214px);
 }
 .hero-photo-showcase__image {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: 100%;
   object-fit: cover;
   background: #020617;
   filter: saturate(1.08) contrast(1.04);
@@ -1457,7 +1461,8 @@ body.video-modal-open { overflow: hidden; }
   .hero h1 { max-width: 100%; }
   .hero-frame { padding: 0.75rem; }
   .hero-frame img { max-height: 200px; object-fit: contain; }
-  .hero-photo-showcase__image { aspect-ratio: 16 / 11; }
+  .hero-photo-showcase__copy { min-height: 0; }
+  .hero-photo-showcase__frame { height: clamp(190px, 48vw, 280px); }
   .hero-actions { flex-direction: column; align-items: stretch; gap: 0.6rem; }
   .hero-actions .btn { width: 100%; }
   .hero-proof { grid-template-columns: 1fr; gap: 0.55rem; }
