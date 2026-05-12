@@ -1,5 +1,3 @@
-import "./style.css";
-
 const rawGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
 const isPlaceholderGoogleId =
   !rawGoogleClientId ||
@@ -962,13 +960,11 @@ const heroPhotoShowcase = document.querySelector("[data-photo-showcase]");
 if (heroPhotoShowcase) {
   const photoImage = heroPhotoShowcase.querySelector("[data-photo-image]");
   const quoteNode = heroPhotoShowcase.querySelector("[data-photo-title]");
-  const categoryNode = heroPhotoShowcase.querySelector("[data-photo-category]");
   const autoRotateDelay = 60000;
   const unsplash = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=3840&q=90`;
 
-  const buildScenes = (category, quotes, photos) =>
+  const buildScenes = (quotes, photos) =>
     photos.map((photo, index) => ({
-      category,
       quote: quotes[index % quotes.length],
       ...photo,
     }));
@@ -1068,10 +1064,10 @@ if (heroPhotoShowcase) {
   ];
 
   const photoScenes = [
-    ...buildScenes("Cosmos / 4K Photography", cosmosQuotes, cosmosPhotos),
-    ...buildScenes("Nature / 4K Photography", natureQuotes, naturePhotos),
-    ...buildScenes("Technology / 4K Photography", technologyQuotes, technologyPhotos),
-    ...buildScenes("Business / 4K Photography", businessQuotes, businessPhotos),
+    ...buildScenes(cosmosQuotes, cosmosPhotos),
+    ...buildScenes(natureQuotes, naturePhotos),
+    ...buildScenes(technologyQuotes, technologyPhotos),
+    ...buildScenes(businessQuotes, businessPhotos),
   ];
 
   let previousSceneIndex = -1;
@@ -1113,9 +1109,6 @@ if (heroPhotoShowcase) {
   const applyPhotoScene = (scene = choosePhotoScene()) => {
     if (quoteNode) {
       quoteNode.textContent = scene.quote;
-    }
-    if (categoryNode) {
-      categoryNode.textContent = scene.category;
     }
     if (!(photoImage instanceof HTMLImageElement)) {
       return;
