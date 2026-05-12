@@ -25,10 +25,15 @@ const company = {
 const commonLinks = [
   { label: "ERP Implementation", href: "/erp-implementation-consultants-pakistan-uae/" },
   { label: "SAP Business One", href: "/sap-business-one-consultant-pakistan-uae/" },
+  { label: "SAP B1 Support", href: "/sap-business-one-support-pakistan-uae/" },
   { label: "Odoo ERP", href: "/odoo-erp-consultant-pakistan-uae/" },
+  { label: "Odoo Customization", href: "/odoo-customization-development-services/" },
   { label: "ERPNext", href: "/erpnext-implementation-services/" },
+  { label: "ERP Migration", href: "/erp-data-migration-services/" },
   { label: "Cloud Hosting", href: "/erp-cloud-hosting-managed-support/" },
+  { label: "Ecommerce ERP", href: "/ecommerce-erp-integration-services/" },
   { label: "AI Warehouse", href: "/ai-warehouse-management-system/" },
+  { label: "Dedicated Developers", href: "/software-development-outsourcing-pakistan-uae/" },
 ];
 
 const pages = [
@@ -499,6 +504,241 @@ const pages = [
       {
         q: "Do dedicated teams support existing systems?",
         a: "Yes. Dedicated teams can support existing ERP, web, mobile, integration and reporting systems while also delivering new work.",
+      },
+    ],
+  },
+  {
+    slug: "sap-business-one-support-pakistan-uae",
+    title: "SAP Business One Support Pakistan & UAE | ABiT Consulting",
+    description:
+      "SAP Business One support, troubleshooting, reporting, add-on fixes, Service Layer integrations, performance tuning and managed support for Pakistan, UAE and remote teams.",
+    keywords:
+      "SAP Business One support Pakistan, SAP B1 support UAE, SAP Business One troubleshooting, SAP B1 reports, SAP Business One Service Layer support",
+    eyebrow: "SAP Business One Support",
+    h1: "SAP Business One support for teams that need stable daily operations.",
+    lead:
+      "ABiT supports SAP Business One users with issue resolution, reports, add-ons, integrations, hosting coordination and practical improvements after go-live.",
+    tags: ["SAP B1", "Support", "Reports", "Integrations", "Hosting"],
+    serviceType: "SAP Business One support",
+    sectionTitle: "SAP Business One support coverage",
+    deliverables: [
+      "Functional support for finance, sales, purchasing, inventory and production workflows",
+      "Technical fixes for add-ons, reports, Service Layer, B1if and API integrations",
+      "Performance review, backup checks, user access review and hosting coordination",
+      "Support desk process, issue triage, documentation and enhancement planning",
+    ],
+    bestFor: [
+      "Companies already running SAP Business One but facing daily user friction",
+      "Teams with slow reports, broken integrations or unstable add-ons",
+      "Businesses that need a support partner across Pakistan, UAE or remote markets",
+      "IT and finance teams planning phased SAP B1 improvements after go-live",
+    ],
+    outcomes: [
+      "Faster response on SAP Business One issues",
+      "Cleaner reporting, integrations and approval workflows",
+      "Less disruption from recurring system problems",
+      "A support path that covers both functional and technical work",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT support an existing SAP Business One installation?",
+        a: "Yes. ABiT can review the current setup, resolve issues, improve reports, support add-ons and maintain integrations for an existing SAP Business One environment.",
+      },
+      {
+        q: "Do you support SAP B1 reports and dashboards?",
+        a: "Yes. ABiT can improve Crystal Reports, dashboards, exports and operational reports connected to SAP Business One data.",
+      },
+      {
+        q: "Can support include integrations?",
+        a: "Yes. ABiT supports integrations built with Service Layer, B1if, APIs, middleware and scheduled data exchange patterns.",
+      },
+    ],
+  },
+  {
+    slug: "odoo-customization-development-services",
+    title: "Odoo Customization & Development Services | ABiT Consulting",
+    description:
+      "Odoo customization, module development, workflows, reports, print formats, ecommerce connectors, migration and managed support for Pakistan, UAE and worldwide businesses.",
+    keywords:
+      "Odoo customization services, Odoo development company, Odoo module development, Odoo reports, Odoo ecommerce integration",
+    eyebrow: "Odoo Customization",
+    h1: "Odoo customization and development for workflows standard modules miss.",
+    lead:
+      "ABiT extends Odoo with custom modules, reports, approvals, ecommerce connectors, migration support and integrations that match real operating processes.",
+    tags: ["Odoo", "Custom Modules", "Reports", "Ecommerce", "APIs"],
+    serviceType: "Odoo customization and development",
+    sectionTitle: "Odoo development capabilities",
+    deliverables: [
+      "Custom Odoo modules, fields, workflows, approval flows and access rules",
+      "Print formats, dashboards, reports, imports, exports and automation",
+      "Ecommerce, payment, shipping, warehouse, finance and third-party API connectors",
+      "Code review, migration support, performance fixes and managed support",
+    ],
+    bestFor: [
+      "Businesses that use Odoo but still rely on spreadsheets or manual steps",
+      "Ecommerce, trading, services, distribution and manufacturing teams",
+      "Companies needing custom Odoo reports, connectors or approval flows",
+      "Teams planning upgrades, migrations or cleanup of existing Odoo customizations",
+    ],
+    outcomes: [
+      "Odoo screens and workflows aligned with how users work",
+      "Reduced manual re-entry between Odoo and other systems",
+      "Cleaner reporting for finance, sales, inventory and operations",
+      "Custom development that can be supported after launch",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT build custom Odoo modules?",
+        a: "Yes. ABiT builds custom modules, reports, print formats, workflows and integrations around standard Odoo apps.",
+      },
+      {
+        q: "Can you improve existing Odoo customizations?",
+        a: "Yes. ABiT can review current custom code, identify stability or upgrade risks and prioritize fixes.",
+      },
+      {
+        q: "Do you connect Odoo with ecommerce platforms?",
+        a: "Yes. ABiT can connect Odoo with ecommerce, payment, warehouse, shipping and finance systems through APIs and custom connectors.",
+      },
+    ],
+  },
+  {
+    slug: "erp-data-migration-services",
+    title: "ERP Data Migration Services | ABiT Consulting",
+    description:
+      "ERP data migration planning, cleanup, mapping, imports, validation and go-live support for SAP Business One, Odoo, ERPNext and custom ERP systems.",
+    keywords:
+      "ERP data migration services, SAP Business One data migration, Odoo data migration, ERPNext migration, ERP master data cleanup",
+    eyebrow: "ERP Data Migration",
+    h1: "ERP data migration services for cleaner go-lives and better reporting.",
+    lead:
+      "ABiT helps businesses move customers, vendors, items, inventory, opening balances and transaction history into ERP with a practical migration plan.",
+    tags: ["Migration", "Master Data", "Validation", "SAP B1", "Odoo", "ERPNext"],
+    serviceType: "ERP data migration",
+    sectionTitle: "ERP migration delivery scope",
+    deliverables: [
+      "Migration inventory, data templates, field mapping and ownership plan",
+      "Master data cleanup for customers, vendors, items, chart of accounts and stock",
+      "Import scripts, validation reports, reconciliation and user sign-off support",
+      "Cutover planning, test migrations, go-live support and post-migration fixes",
+    ],
+    bestFor: [
+      "Companies replacing spreadsheets, legacy systems or disconnected software",
+      "Teams moving to SAP Business One, Odoo, ERPNext or a custom ERP",
+      "Businesses with duplicate, incomplete or inconsistent master data",
+      "Finance and operations teams that need reliable opening balances and stock",
+    ],
+    outcomes: [
+      "Cleaner ERP master data from the first day of use",
+      "Lower go-live risk from tested imports and reconciliations",
+      "Better reporting accuracy after implementation",
+      "A repeatable migration process for future branches or companies",
+    ],
+    faqs: [
+      {
+        q: "Which ERP systems can ABiT migrate data into?",
+        a: "ABiT can support migration into SAP Business One, Odoo, ERPNext and custom ERP systems.",
+      },
+      {
+        q: "Can you clean data before migration?",
+        a: "Yes. ABiT can help identify duplicates, missing fields, inactive records and mapping issues before import.",
+      },
+      {
+        q: "Do you run test migrations before go-live?",
+        a: "Yes. ABiT recommends test imports, validation reports and user sign-off before production cutover.",
+      },
+    ],
+  },
+  {
+    slug: "ecommerce-erp-integration-services",
+    title: "Ecommerce ERP Integration Services | ABiT Consulting",
+    description:
+      "Connect Shopify, Magento, WooCommerce, custom ecommerce stores and marketplaces with SAP Business One, Odoo, ERPNext or custom ERP systems.",
+    keywords:
+      "ecommerce ERP integration, Shopify SAP Business One integration, Magento ERP integration, WooCommerce Odoo integration, marketplace ERP connector",
+    eyebrow: "Ecommerce ERP Integration",
+    h1: "Ecommerce ERP integration for cleaner orders, stock and finance data.",
+    lead:
+      "ABiT connects online stores and marketplaces with ERP workflows so sales, stock, customer, invoice and fulfillment data move with fewer manual handoffs.",
+    tags: ["Shopify", "Magento", "WooCommerce", "Marketplaces", "ERP APIs"],
+    serviceType: "Ecommerce ERP integration",
+    sectionTitle: "Ecommerce integration capabilities",
+    deliverables: [
+      "Order, customer, product, inventory, invoice and payment sync planning",
+      "Connectors for Shopify, Magento, WooCommerce, marketplaces and custom stores",
+      "ERP integration with SAP Business One, Odoo, ERPNext or custom systems",
+      "Error handling, retry queues, logs, dashboards and reconciliation reports",
+    ],
+    bestFor: [
+      "Retailers and distributors selling through ecommerce and ERP at the same time",
+      "Teams manually entering web orders into SAP Business One, Odoo or ERPNext",
+      "Businesses needing accurate stock availability across channels",
+      "Companies scaling marketplace, B2B portal or D2C operations",
+    ],
+    outcomes: [
+      "Less duplicate order entry and fewer stock mismatches",
+      "Faster fulfillment and finance reconciliation",
+      "Better visibility across ecommerce, warehouse and ERP users",
+      "Integration architecture that can expand to more channels",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT connect Shopify with SAP Business One?",
+        a: "Yes. ABiT can connect Shopify and other ecommerce platforms with SAP Business One using APIs, middleware and scheduled sync patterns.",
+      },
+      {
+        q: "Can ecommerce integration update inventory?",
+        a: "Yes. Integrations can be designed to sync available stock, product data, orders, invoices and fulfillment status based on business rules.",
+      },
+      {
+        q: "Do you integrate custom ecommerce platforms?",
+        a: "Yes. ABiT can work with custom stores and marketplaces where API or database integration access is available.",
+      },
+    ],
+  },
+  {
+    slug: "software-development-outsourcing-pakistan-uae",
+    title: "Software Development Outsourcing Pakistan & UAE | ABiT Consulting",
+    description:
+      "Outsource software development, ERP developers, web and mobile engineers, integration specialists and support teams for Pakistan, UAE and international projects.",
+    keywords:
+      "software development outsourcing Pakistan, software outsourcing UAE, hire remote developers, ERP developers Pakistan, dedicated development team UAE",
+    eyebrow: "Software Development Outsourcing",
+    h1: "Software development outsourcing for ERP, web, mobile and integration work.",
+    lead:
+      "ABiT provides developers, ERP specialists, QA, integration engineers and support resources for teams that need delivery capacity without long hiring cycles.",
+    tags: ["Outsourcing", "Remote Developers", "ERP Developers", "QA", "Support"],
+    serviceType: "Software development outsourcing",
+    sectionTitle: "Outsourced team capabilities",
+    deliverables: [
+      "Dedicated developers for ERP, web, mobile, portals, APIs and reporting",
+      "ERP functional and technical specialists for SAP Business One, Odoo and ERPNext",
+      "QA, documentation, support desk coordination and sprint delivery",
+      "Flexible engagement models for project delivery, backlog execution and support",
+    ],
+    bestFor: [
+      "Companies that need more software delivery capacity",
+      "IT managers with ERP customization, integration or support backlogs",
+      "Founders building customer portals, SaaS products or mobile applications",
+      "Businesses in Pakistan, UAE or remote markets needing reliable outsourced teams",
+    ],
+    outcomes: [
+      "Faster backlog progress without permanent hiring delays",
+      "One team for ERP knowledge and software engineering execution",
+      "Flexible capacity for implementation, enhancement and support work",
+      "Clearer ownership across delivery, QA and support",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT provide remote developers for an existing team?",
+        a: "Yes. ABiT can provide developers, ERP specialists, QA and support resources who align with an existing backlog and delivery process.",
+      },
+      {
+        q: "Do outsourced teams handle ERP projects?",
+        a: "Yes. ABiT outsourced teams can support SAP Business One, Odoo, ERPNext, custom ERP, portals, integrations and reporting work.",
+      },
+      {
+        q: "Can the engagement include support after delivery?",
+        a: "Yes. ABiT can provide ongoing support, enhancements and monitoring after a project or implementation goes live.",
       },
     ],
   },
