@@ -25,8 +25,14 @@ const company = {
 const commonLinks = [
   { label: "ERP Implementation", href: "/erp-implementation-consultants-pakistan-uae/" },
   { label: "SAP Business One", href: "/sap-business-one-consultant-pakistan-uae/" },
+  { label: "SAP B1 UAE", href: "/sap-business-one-implementation-uae/" },
   { label: "Odoo ERP", href: "/odoo-erp-consultant-pakistan-uae/" },
+  { label: "Odoo Dubai", href: "/odoo-implementation-dubai-uae/" },
   { label: "ERPNext", href: "/erpnext-implementation-services/" },
+  { label: "ERP Integrations", href: "/erp-integration-services-sap-odoo-erpnext/" },
+  { label: "Magento SAP", href: "/magento-sap-business-one-integration/" },
+  { label: "Manufacturing ERP", href: "/manufacturing-erp-software-pakistan-uae/" },
+  { label: "ERP Dashboards", href: "/erp-reporting-business-intelligence-dashboards/" },
   { label: "Cloud Hosting", href: "/erp-cloud-hosting-managed-support/" },
   { label: "AI Warehouse", href: "/ai-warehouse-management-system/" },
 ];
@@ -127,6 +133,53 @@ const pages = [
     ],
   },
   {
+    slug: "sap-business-one-implementation-uae",
+    title: "SAP Business One Implementation UAE & Dubai | ABiT Consulting",
+    description:
+      "SAP Business One implementation, add-ons, Service Layer integrations, reporting and managed support for UAE and Dubai companies with Pakistan delivery depth.",
+    keywords:
+      "SAP Business One implementation UAE, SAP Business One Dubai, SAP B1 partner UAE, SAP B1 add ons Dubai, SAP Business One support UAE",
+    eyebrow: "SAP Business One UAE",
+    h1: "SAP Business One implementation for UAE and Dubai companies.",
+    lead:
+      "ABiT helps UAE teams launch, improve and support SAP Business One across finance, procurement, inventory, sales, production and reporting.",
+    tags: ["UAE", "Dubai", "SAP B1", "Service Layer", "Managed Support"],
+    serviceType: "SAP Business One implementation in UAE",
+    sectionTitle: "SAP Business One services for UAE operations",
+    deliverables: [
+      "Process discovery, fit-gap mapping, configuration and go-live planning",
+      "Finance, inventory, sales, purchasing, production and approval workflows",
+      "Service Layer, B1if, ecommerce, WhatsApp, banking and tax integrations",
+      "Crystal Reports, dashboards, user training and post-go-live support",
+    ],
+    bestFor: [
+      "Dubai and UAE companies implementing SAP Business One for the first time",
+      "Existing SAP B1 users who need better reports, add-ons or integrations",
+      "Trading, distribution, manufacturing, retail and services teams",
+      "Groups that need remote delivery with structured regional support",
+    ],
+    outcomes: [
+      "SAP B1 workflows aligned to how UAE teams actually operate",
+      "Lower manual re-entry between SAP B1, ecommerce, messaging and finance tools",
+      "Cleaner reporting for management, finance and operations users",
+      "A support partner that can handle both functional and technical issues",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT support SAP Business One projects in Dubai and UAE?",
+        a: "Yes. ABiT supports UAE and Dubai companies with SAP Business One implementation, customization, integrations, reporting and managed support.",
+      },
+      {
+        q: "Can ABiT improve an existing SAP Business One setup?",
+        a: "Yes. ABiT can review configuration, reports, add-ons, integrations and user workflows, then prioritize fixes that reduce daily friction.",
+      },
+      {
+        q: "Which SAP Business One integrations can ABiT build?",
+        a: "ABiT builds SAP Business One integrations for ecommerce, WhatsApp, finance tools, reporting, WMS, portals and custom business systems.",
+      },
+    ],
+  },
+  {
     slug: "odoo-erp-consultant-pakistan-uae",
     title: "Odoo ERP Consultant Pakistan & UAE | ABiT Consulting",
     description:
@@ -170,6 +223,53 @@ const pages = [
       {
         q: "Can Odoo connect with ecommerce or payment systems?",
         a: "Yes. ABiT integrates Odoo with ecommerce, payment, shipping, warehouse, reporting and finance systems through APIs and custom connectors.",
+      },
+    ],
+  },
+  {
+    slug: "odoo-implementation-dubai-uae",
+    title: "Odoo Implementation Dubai & UAE | ABiT Consulting",
+    description:
+      "Odoo implementation, customization, migration, ecommerce integration, reports and managed support for Dubai and UAE businesses.",
+    keywords:
+      "Odoo implementation Dubai, Odoo consultant UAE, Odoo customization Dubai, Odoo ERP UAE, Odoo support Dubai",
+    eyebrow: "Odoo Dubai",
+    h1: "Odoo implementation and customization for Dubai and UAE teams.",
+    lead:
+      "ABiT configures, extends and supports Odoo for UAE companies that need practical ERP workflows across sales, finance, inventory, ecommerce and operations.",
+    tags: ["Dubai", "UAE", "Odoo ERP", "Migration", "Ecommerce"],
+    serviceType: "Odoo implementation in Dubai and UAE",
+    sectionTitle: "Odoo delivery scope for UAE businesses",
+    deliverables: [
+      "Odoo module planning, configuration, data migration and launch support",
+      "Custom modules, approval flows, reports, dashboards and print formats",
+      "Website, ecommerce, payment, warehouse, logistics and finance integrations",
+      "User training, support desk coverage and performance improvements",
+    ],
+    bestFor: [
+      "Dubai and UAE companies replacing spreadsheets or disconnected tools",
+      "Retail, distribution, ecommerce, services and trading businesses",
+      "Teams that need Odoo customization without losing maintainability",
+      "Companies looking for remote Odoo consultants with ERP delivery experience",
+    ],
+    outcomes: [
+      "Odoo modules matched to real operating procedures",
+      "Faster sales, purchase, invoicing, stock and approval workflows",
+      "Better connection between ecommerce, accounting and warehouse data",
+      "Long-term support for fixes, enhancements and user questions",
+    ],
+    faqs: [
+      {
+        q: "Does ABiT implement Odoo for Dubai companies?",
+        a: "Yes. ABiT supports Dubai and UAE companies with Odoo implementation, customization, migration, integrations, reports and managed support.",
+      },
+      {
+        q: "Can ABiT connect Odoo with ecommerce systems?",
+        a: "Yes. ABiT integrates Odoo with ecommerce, payment, shipping, warehouse, finance and reporting systems through APIs and custom connectors.",
+      },
+      {
+        q: "Can ABiT migrate existing data into Odoo?",
+        a: "Yes. ABiT helps clean, map and migrate master data and transaction history according to the agreed implementation plan.",
       },
     ],
   },
@@ -311,6 +411,194 @@ const pages = [
       {
         q: "Can custom software work with SAP B1, Odoo or ERPNext?",
         a: "Yes. ABiT builds around SAP Business One, Odoo, ERPNext and custom ERP systems.",
+      },
+    ],
+  },
+  {
+    slug: "erp-integration-services-sap-odoo-erpnext",
+    title: "ERP Integration Services for SAP, Odoo & ERPNext | ABiT",
+    description:
+      "ERP integration services for SAP Business One, Odoo, ERPNext and custom systems, including ecommerce, WhatsApp, WMS, tax, finance and portals.",
+    keywords:
+      "ERP integration services, SAP Business One integration, Odoo integration, ERPNext integration, ecommerce ERP integration, WhatsApp ERP integration",
+    eyebrow: "ERP Integrations",
+    h1: "ERP integration services for SAP Business One, Odoo and ERPNext.",
+    lead:
+      "ABiT connects ERP platforms with ecommerce, messaging, tax, warehouse, finance, reporting and custom business applications so teams stop re-entering the same data.",
+    tags: ["SAP B1", "Odoo", "ERPNext", "Ecommerce", "APIs"],
+    serviceType: "ERP integration services",
+    sectionTitle: "Integration services around ERP platforms",
+    deliverables: [
+      "API, webhook, middleware and scheduled sync architecture",
+      "Shopify, Magento, WooCommerce, WhatsApp, payment and logistics integrations",
+      "Tax, invoicing, WMS, finance, reporting and customer portal connections",
+      "Monitoring, error handling, retry workflows and reconciliation reports",
+    ],
+    bestFor: [
+      "Companies with ERP data split across ecommerce, warehouse or finance tools",
+      "SAP Business One, Odoo and ERPNext users who need reliable API work",
+      "Operations teams still copying orders, invoices or stock updates manually",
+      "Businesses that need audit trails and controlled integration support",
+    ],
+    outcomes: [
+      "Less duplicate data entry across departments and external systems",
+      "More reliable order, invoice, stock and payment data flow",
+      "Clear error visibility when an integration fails",
+      "Reusable integration architecture for future platforms and channels",
+    ],
+    faqs: [
+      {
+        q: "Which ERP systems can ABiT integrate?",
+        a: "ABiT integrates SAP Business One, Odoo, ERPNext and custom ERP systems with ecommerce, messaging, finance, tax, warehouse, reporting and portal platforms.",
+      },
+      {
+        q: "Can ABiT fix an existing unreliable integration?",
+        a: "Yes. ABiT can review current sync logic, logs, failure points and data mapping, then stabilize the integration or replace weak parts.",
+      },
+      {
+        q: "Do ERP integrations need middleware?",
+        a: "Not always. ABiT chooses direct APIs, middleware, scheduled jobs or hybrid patterns based on volume, reliability, security and audit requirements.",
+      },
+    ],
+  },
+  {
+    slug: "magento-sap-business-one-integration",
+    title: "Magento SAP Business One Integration | ABiT Consulting",
+    description:
+      "Magento and SAP Business One integration for orders, customers, stock, pricing, invoices, payments and fulfillment workflows.",
+    keywords:
+      "Magento SAP Business One integration, Magento SAP B1 integration, SAP Business One ecommerce integration, Magento ERP integration",
+    eyebrow: "Magento SAP Integration",
+    h1: "Magento and SAP Business One integration for ecommerce teams.",
+    lead:
+      "ABiT connects Magento storefronts with SAP Business One so ecommerce, finance, inventory and fulfillment teams work from cleaner shared data.",
+    tags: ["Magento", "SAP B1", "Ecommerce", "Inventory", "Orders"],
+    serviceType: "Magento SAP Business One integration",
+    sectionTitle: "Magento and SAP Business One sync coverage",
+    deliverables: [
+      "Order, customer, item, stock, price, invoice and payment data mapping",
+      "API or middleware sync design with retry handling and error logs",
+      "Inventory, fulfillment, finance and customer service workflow alignment",
+      "Testing, launch support, monitoring and post-go-live refinements",
+    ],
+    bestFor: [
+      "Magento stores that rely on SAP Business One for finance and inventory",
+      "Ecommerce teams re-entering web orders into SAP B1 manually",
+      "Operations needing better stock accuracy across online and back-office teams",
+      "Companies planning Shopify, WooCommerce or marketplace integrations later",
+    ],
+    outcomes: [
+      "Faster order flow between Magento and SAP Business One",
+      "Cleaner inventory, customer, payment and invoice records",
+      "Reduced manual reconciliation for ecommerce and finance teams",
+      "Integration patterns that can support future sales channels",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT connect Magento with SAP Business One?",
+        a: "Yes. ABiT can integrate Magento with SAP Business One for orders, customers, items, inventory, invoices, payments and fulfillment workflows.",
+      },
+      {
+        q: "Can the integration support error handling and retries?",
+        a: "Yes. ABiT can design logs, alerts, retry handling and reconciliation reports so teams can see and resolve sync issues.",
+      },
+      {
+        q: "Can this work with other ecommerce platforms later?",
+        a: "Yes. ABiT can design the architecture so future Shopify, WooCommerce, marketplace or portal integrations reuse the same ERP-side patterns where practical.",
+      },
+    ],
+  },
+  {
+    slug: "manufacturing-erp-software-pakistan-uae",
+    title: "Manufacturing ERP Software Pakistan & UAE | ABiT Consulting",
+    description:
+      "Manufacturing ERP consulting for Pakistan and UAE businesses using SAP Business One, Odoo, ERPNext or custom ERP workflows for production and inventory.",
+    keywords:
+      "manufacturing ERP Pakistan, manufacturing ERP UAE, production ERP software, SAP Business One manufacturing, Odoo manufacturing implementation",
+    eyebrow: "Manufacturing ERP",
+    h1: "Manufacturing ERP software consulting for Pakistan and UAE.",
+    lead:
+      "ABiT helps manufacturing teams control production, inventory, purchasing, costing, quality, approvals and reporting through practical ERP implementation.",
+    tags: ["Manufacturing", "Production", "Inventory", "Costing", "Quality"],
+    serviceType: "Manufacturing ERP consulting",
+    sectionTitle: "ERP workflows for manufacturing operations",
+    deliverables: [
+      "Production planning, BOM, routing, work order and material issue workflows",
+      "Inventory, purchasing, warehouse, quality and dispatch process setup",
+      "Costing, approval, reporting and management dashboard configuration",
+      "Custom integrations for scales, barcode, WMS, finance and compliance systems",
+    ],
+    bestFor: [
+      "Manufacturers moving from spreadsheets or legacy tools to ERP",
+      "Production teams using SAP Business One, Odoo, ERPNext or custom ERP",
+      "Companies needing better stock, costing, quality and dispatch visibility",
+      "Pakistan and UAE businesses coordinating multi-location operations",
+    ],
+    outcomes: [
+      "Clearer production status, inventory availability and procurement needs",
+      "Fewer manual workarounds in costing, quality and dispatch reporting",
+      "Better alignment between shop floor activity and finance records",
+      "ERP workflows that can grow with added products, locations and users",
+    ],
+    faqs: [
+      {
+        q: "Which manufacturing ERP platforms does ABiT support?",
+        a: "ABiT supports manufacturing workflows in SAP Business One, Odoo, ERPNext and custom ERP systems.",
+      },
+      {
+        q: "Can ABiT handle production and inventory reporting?",
+        a: "Yes. ABiT builds production, stock, costing, quality, purchasing and dispatch reports or dashboards around ERP data.",
+      },
+      {
+        q: "Can manufacturing ERP connect with barcode or WMS systems?",
+        a: "Yes. ABiT can connect ERP workflows with barcode, WMS, mobile, warehouse and custom shop floor systems.",
+      },
+    ],
+  },
+  {
+    slug: "erp-reporting-business-intelligence-dashboards",
+    title: "ERP Reporting & Business Intelligence Dashboards | ABiT",
+    description:
+      "ERP reporting, BI dashboards, Crystal Reports, Power BI-style views and management analytics for SAP Business One, Odoo, ERPNext and custom systems.",
+    keywords:
+      "ERP reporting dashboards, SAP Business One Crystal Reports, Odoo dashboards, ERP business intelligence, management dashboards",
+    eyebrow: "ERP Reporting",
+    h1: "ERP reporting and business intelligence dashboards for managers.",
+    lead:
+      "ABiT turns ERP data into practical dashboards, alerts and reports for finance, sales, inventory, production, support and executive decision-making.",
+    tags: ["Dashboards", "Crystal Reports", "BI", "KPI Alerts", "Analytics"],
+    serviceType: "ERP reporting and business intelligence",
+    sectionTitle: "Reporting and dashboard services",
+    deliverables: [
+      "Management dashboards for sales, finance, inventory, production and support",
+      "Crystal Reports, custom SQL reports, exports and scheduled email reports",
+      "KPI alerts, exception reports, drilldowns and role-based views",
+      "Data cleanup, mapping and reporting model improvements",
+    ],
+    bestFor: [
+      "Leaders who need answers without waiting for manual Excel work",
+      "ERP users with inconsistent reports across departments",
+      "SAP Business One, Odoo, ERPNext and custom ERP environments",
+      "Teams that need operational alerts before problems become visible late",
+    ],
+    outcomes: [
+      "Faster management visibility into revenue, stock, costs and operations",
+      "Fewer spreadsheet versions and manual reporting bottlenecks",
+      "Better accountability through shared KPIs and exception alerts",
+      "Reports that match the way each role makes decisions",
+    ],
+    faqs: [
+      {
+        q: "Can ABiT build SAP Business One Crystal Reports?",
+        a: "Yes. ABiT builds Crystal Reports, dashboards and custom reports for SAP Business One and other ERP platforms.",
+      },
+      {
+        q: "Can ABiT create dashboards for Odoo or ERPNext?",
+        a: "Yes. ABiT can build dashboards, custom reports, exports and alerts for Odoo, ERPNext and custom ERP systems.",
+      },
+      {
+        q: "Do dashboards require clean ERP data first?",
+        a: "Useful dashboards depend on reliable fields and mapping. ABiT can review data quality and improve the reporting model before building views.",
       },
     ],
   },
@@ -511,7 +799,13 @@ const staticSitemapEntries = [
   { loc: "/web-development-services/", changefreq: "weekly", priority: "0.8" },
   { loc: "/mobile-app-development-services/", changefreq: "weekly", priority: "0.8" },
   { loc: "/iotinternet-of-things/", changefreq: "weekly", priority: "0.8" },
+  { loc: "/about-us/", changefreq: "monthly", priority: "0.7" },
+  { loc: "/blogs/", changefreq: "weekly", priority: "0.7" },
   { loc: "/schedule-meeting/", changefreq: "monthly", priority: "0.7" },
+  { loc: "/abitbot/", changefreq: "monthly", priority: "0.7" },
+  { loc: "/sbo-desk/", changefreq: "monthly", priority: "0.7" },
+  { loc: "/hire-a-team/", changefreq: "monthly", priority: "0.7" },
+  { loc: "/career/", changefreq: "monthly", priority: "0.5" },
   { loc: "/integration-of-shopify-sap-business-one/", changefreq: "monthly", priority: "0.7" },
   { loc: "/sap-business-one-integration-with-whatsapp-messenger/", changefreq: "monthly", priority: "0.7" },
 ];
@@ -570,7 +864,27 @@ const jsonLd = (page) => {
           addressCountry: "PK",
         },
         areaServed: ["Pakistan", "United Arab Emirates", "Saudi Arabia", "Worldwide"],
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            telephone: company.telephone,
+            email: company.email,
+            contactType: "sales and support",
+            areaServed: ["PK", "AE", "SA"],
+            availableLanguage: ["en"],
+          },
+        ],
         sameAs: [company.facebook, company.linkedIn],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${baseUrl}/#website`,
+        url: baseUrl,
+        name: company.name,
+        publisher: {
+          "@id": `${baseUrl}/#organization`,
+        },
+        inLanguage: "en",
       },
       {
         "@type": "WebPage",
@@ -579,6 +893,7 @@ const jsonLd = (page) => {
         name: page.title,
         description: page.description,
         dateModified: lastmod,
+        inLanguage: "en",
         isPartOf: {
           "@id": `${baseUrl}/#website`,
         },
@@ -792,7 +1107,7 @@ ${relatedLinks(page.slug)}
         <p>ERP consulting, custom software, integrations, cloud hosting and managed support.</p>
       </div>
       <div>
-        <a href="${company.linkedIn}" target="_blank" rel="noreferrer">LinkedIn</a>
+        <a href="${company.linkedIn}" target="_blank" rel="me noreferrer">LinkedIn</a>
         <a href="${company.facebook}" target="_blank" rel="noreferrer">Facebook</a>
         <a href="/privacy-policy/">Privacy Policy</a>
       </div>
