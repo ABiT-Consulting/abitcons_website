@@ -193,8 +193,8 @@
             <a href="#products">Products</a>
             <a href="#expertise">Expertise</a>
             <a href="#work">Work</a>
-            <a href="#account-access">Sign In</a>
-            <a href="#support-portal">Support</a>
+            <a href="#support-portal" data-auth-link="signin">Sign In</a>
+            <a href="#support-portal" data-auth-link="support" hidden>Support</a>
             <a href="#contact">Contact</a>
           </nav>
           <div class="nav-actions">
@@ -1049,143 +1049,72 @@
         </div>
       </section>
 
-      <section class="auth" id="account-access">
-        <div class="container split">
-          <div class="auth-card" data-reveal>
-            <p class="eyebrow">Customer Portal</p>
-            <h2>Create your account or sign in instantly.</h2>
-            <p>
-              Access your ABiT customer workspace to track projects, manage deliverables, and stay
-              connected with your delivery team. Continue with email, Google, or Facebook.
-            </p>
-            <ul class="checklist">
-              <li>One-click social sign-in with Google and Facebook</li>
-              <li>Company profile and industry captured at registration</li>
-              <li>Secure account access from any device</li>
-              <li>Fast onboarding for new customer teams</li>
-            </ul>
-          </div>
-
-          <div class="auth-box" data-auth-panel data-reveal>
-            <div class="auth-tabs" role="tablist" aria-label="Choose account action">
-              <button type="button" class="auth-tab is-active" role="tab" aria-selected="true" data-auth-tab="signup">
-                Sign Up
-              </button>
-              <button type="button" class="auth-tab" role="tab" aria-selected="false" data-auth-tab="signin">
-                Sign In
-              </button>
-            </div>
-
-            <form class="auth-form" data-auth-form="signup">
-              <label>
-                Full name
-                <input type="text" name="name" placeholder="Jane Doe" autocomplete="name" required />
-              </label>
-              <label>
-                Work email
-                <input type="email" name="email" placeholder="jane@company.com" autocomplete="email" required />
-              </label>
-              <div class="auth-form__grid">
-                <label>
-                  Company name
-                  <input type="text" name="companyName" placeholder="Company Ltd." autocomplete="organization" required />
-                </label>
-                <label>
-                  Industry
-                  <select name="industry" required>
-                    <option value="">Select industry</option>
-                    <option value="Manufacturing">Manufacturing</option>
-                    <option value="Retail & Distribution">Retail & Distribution</option>
-                    <option value="Trading">Trading</option>
-                    <option value="Services">Services</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Construction">Construction</option>
-                    <option value="Education">Education</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </label>
-              </div>
-              <div class="auth-form__grid">
-                <label>
-                  Company size
-                  <select name="companySize">
-                    <option value="">Select size</option>
-                    <option value="1-10">1-10 employees</option>
-                    <option value="11-50">11-50 employees</option>
-                    <option value="51-200">51-200 employees</option>
-                    <option value="201-500">201-500 employees</option>
-                    <option value="500+">500+ employees</option>
-                  </select>
-                </label>
-                <label>
-                  Company website
-                  <input type="text" name="companyWebsite" placeholder="company.com" autocomplete="url" inputmode="url" />
-                </label>
-              </div>
-              <label>
-                Password
-                <input type="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required />
-              </label>
-              <label>
-                Confirm password
-                <input type="password" name="confirmPassword" placeholder="Repeat your password" minlength="8" autocomplete="new-password" required />
-              </label>
-              <button class="btn primary" type="submit">Create account</button>
-            </form>
-
-            <form class="auth-form" data-auth-form="signin" hidden>
-              <label>
-                Email
-                <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required />
-              </label>
-              <label>
-                Password
-                <input type="password" name="password" placeholder="Enter password" autocomplete="current-password" required />
-              </label>
-              <button class="btn primary" type="submit">Sign in</button>
-            </form>
-
-            <div class="auth-divider" aria-hidden="true"><span>or continue with</span></div>
-            <div class="social-auth">
-              <button class="social-auth__btn" type="button" data-social-provider="google" data-auth-intent="signup">
-                Continue with Google
-              </button>
-              <button class="social-auth__btn social-auth__btn--facebook" type="button" data-social-provider="facebook" data-auth-intent="signup">
-                Continue with Facebook
-              </button>
-            </div>
-            <p class="auth-status" data-auth-status>Not signed in</p>
-            <button class="btn ghost auth-logout" type="button" data-auth-logout hidden>Sign out</button>
-            <p class="auth-feedback" aria-live="polite" data-auth-feedback></p>
-          </div>
-        </div>
-      </section>
-
-
       <section class="support-portal" id="support-portal" data-support-portal>
         <div class="container">
           <div class="section-header" data-reveal>
-            <p class="eyebrow">Support Portal</p>
-            <h2>Track tickets, project progress, and open tasks from Odoo.</h2>
+            <p class="eyebrow">Customer Support Portal</p>
+            <h2>Sign in with your ABiT customer credentials.</h2>
             <p class="section-lead">
-              Your customer workspace connects directly with ABiT's Odoo helpdesk and project
-              delivery boards, so updates stay in one source of truth.
+              Customer users are provisioned by ABiT. After sign-in, your workspace loads
+              helpdesk tickets, project progress, and delivery tasks.
             </p>
           </div>
 
-          <div class="support-shell" data-reveal>
+          <div class="support-shell support-shell--guest" data-support-signed-out data-reveal>
+            <aside class="support-panel support-summary-panel">
+              <div>
+                <p class="eyebrow">Secure access</p>
+                <h3>Customer accounts are issued by ABiT.</h3>
+                <p>
+                  Use the username and password provided by ABiT for your company. If you need
+                  access for another team member, request a new support portal user from your account
+                  manager.
+                </p>
+              </div>
+              <div class="support-metrics">
+                <div><strong>-</strong><span>Open tickets</span></div>
+                <div><strong>-</strong><span>Active projects</span></div>
+                <div><strong>-</strong><span>Open tasks</span></div>
+                <div><strong>-</strong><span>Blocked items</span></div>
+              </div>
+            </aside>
+
+            <div class="support-panel support-login-panel">
+              <p class="support-alert" data-auth-status aria-live="polite">
+                Not signed in.
+              </p>
+              <form class="auth-form support-login-form" data-support-login-form>
+                <label>
+                  Username
+                  <input type="text" name="login" placeholder="Your support username" autocomplete="username" required />
+                </label>
+                <label>
+                  Password
+                  <input type="password" name="password" placeholder="Enter password" autocomplete="current-password" required />
+                </label>
+                <div class="support-login-options">
+                  <button class="support-link-button" type="button" data-support-forgot-password>
+                    Forgot password?
+                  </button>
+                </div>
+                <button class="btn primary" type="submit">Sign in to Support</button>
+              </form>
+              <p class="auth-feedback" aria-live="polite" data-auth-feedback></p>
+            </div>
+          </div>
+
+          <div class="support-shell" data-support-signed-in data-reveal hidden>
             <aside class="support-panel support-summary-panel">
               <div>
                 <p class="eyebrow">Customer workspace</p>
-                <h3 data-support-user>Sign in to view your workspace.</h3>
+                <h3 data-support-user>Loading workspace...</h3>
                 <p data-support-copy>
-                  Use the customer account above to load your support tickets, active project
-                  status, and assigned delivery tasks.
+                  Your support tickets, active project status, and assigned delivery tasks are
+                  synced securely.
                 </p>
               </div>
               <div class="support-actions">
-                <a class="btn outline" href="#account-access">Account access</a>
+                <button class="btn outline" type="button" data-auth-logout>Sign out</button>
               </div>
               <div class="support-metrics" data-support-metrics>
                 <div><strong>-</strong><span>Open tickets</span></div>
@@ -1197,7 +1126,7 @@
 
             <div class="support-panel support-workspace">
               <p class="support-alert" data-support-alert aria-live="polite">
-                Sign in to load your Odoo support workspace.
+                Loading your support workspace.
               </p>
 
               <form class="support-ticket-form" data-support-ticket-form>
@@ -1445,7 +1374,7 @@
             <li><a href="#ai-operations">AI Operations</a></li>
             <li><a href="#products">Products</a></li>
             <li><a href="#work">Our Work</a></li>
-            <li><a href="#support-portal">Support Portal</a></li>
+            <li><a href="#support-portal">Customer Login</a></li>
             <li><a href="/career/">Careers</a></li>
             <li><a href="/blogs/">Blogs</a></li>
           </ul>

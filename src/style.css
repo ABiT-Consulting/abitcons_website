@@ -111,6 +111,7 @@
    Reset / base
    ========================================================= */
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; scroll-padding-top: 90px; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -949,6 +950,9 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   gap: 1rem;
   align-items: start;
 }
+.support-shell--guest {
+  grid-template-columns: minmax(260px, 0.95fr) minmax(280px, 1.05fr);
+}
 .support-panel {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -1001,6 +1005,14 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
 }
 .support-workspace {
   padding: clamp(1rem, 2vw, 1.35rem);
+}
+.support-login-panel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.1rem, 2vw, 1.45rem);
+}
+.support-login-form .btn {
+  width: 100%;
 }
 .support-alert {
   margin: 0 0 1rem;
@@ -1210,6 +1222,32 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
 .contact-form textarea::placeholder,
 .support-ticket-form input::placeholder,
 .support-ticket-form textarea::placeholder { color: var(--ink-mute); }
+
+.support-login-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+}
+
+.support-link-button {
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.support-link-button:hover,
+.support-link-button:focus-visible {
+  color: color-mix(in oklab, var(--primary) 78%, black);
+  text-decoration: underline;
+}
 
 .auth-divider {
   margin: 1rem 0;

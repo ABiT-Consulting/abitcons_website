@@ -90,14 +90,34 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 `);
 
+const userColumns = new Set(db.prepare("PRAGMA table_info(users)").all().map((column) => column.name));
+const addUserColumn = (name, definition) => {
+  if (!userColumns.has(name)) {
+    db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
+    userColumns.add(name);
+  }
+};
+
+addUserColumn("login", "TEXT");
+addUserColumn("odoo_uid", "INTEGER");
+addUserColumn("odoo_partner_id", "INTEGER");
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_users_login ON users(login);
+  CREATE INDEX IF NOT EXISTS idx_users_odoo_uid ON users(odoo_uid);
+`);
+
 const getUserByEmail = db.prepare(`
   SELECT
     users.id,
     users.full_name,
     users.email,
+    users.login,
     users.password_hash,
     users.provider,
     users.google_sub,
+    users.odoo_uid,
+    users.odoo_partner_id,
     users.created_at,
     companies.company_name,
     companies.industry,
@@ -108,14 +128,66 @@ const getUserByEmail = db.prepare(`
   WHERE users.email = ?
 `);
 
+const getUserByOdooIdentity = db.prepare(`
+  SELECT
+    users.id,
+    users.full_name,
+    users.email,
+    users.login,
+    users.password_hash,
+    users.provider,
+    users.google_sub,
+    users.odoo_uid,
+    users.odoo_partner_id,
+    users.created_at,
+    companies.company_name,
+    companies.industry,
+    companies.company_size,
+    companies.website
+  FROM users
+  LEFT JOIN companies ON companies.user_id = users.id
+  WHERE users.odoo_uid = ?
+    OR users.login = ?
+    OR users.email = ?
+  LIMIT 1
+`);
+
 const insertUser = db.prepare(`
-  INSERT INTO users (full_name, email, password_hash, provider, google_sub)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO users (full_name, email, login, password_hash, provider, google_sub)
+  VALUES (?, ?, ?, ?, ?, ?)
+`);
+
+const insertOdooUser = db.prepare(`
+  INSERT INTO users (full_name, email, login, password_hash, provider, google_sub, odoo_uid, odoo_partner_id)
+  VALUES (?, ?, ?, NULL, 'Support', NULL, ?, ?)
+`);
+
+const updateOdooUser = db.prepare(`
+  UPDATE users
+  SET full_name = ?,
+      email = ?,
+      login = ?,
+      provider = 'Support',
+      odoo_uid = ?,
+      odoo_partner_id = ?,
+      updated_at = CURRENT_TIMESTAMP
+  WHERE id = ?
 `);
 
 const insertCompany = db.prepare(`
   INSERT INTO companies (user_id, company_name, industry, company_size, website)
   VALUES (?, ?, ?, ?, ?)
+`);
+
+const upsertCompany = db.prepare(`
+  INSERT INTO companies (user_id, company_name, industry, company_size, website)
+  VALUES (?, ?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET
+    company_name = excluded.company_name,
+    industry = excluded.industry,
+    company_size = excluded.company_size,
+    website = excluded.website,
+    updated_at = CURRENT_TIMESTAMP
 `);
 
 const updateSocialUser = db.prepare(`
@@ -139,9 +211,12 @@ const getSessionUser = db.prepare(`
     users.id,
     users.full_name,
     users.email,
+    users.login,
     users.password_hash,
     users.provider,
     users.google_sub,
+    users.odoo_uid,
+    users.odoo_partner_id,
     users.created_at,
     companies.company_name,
     companies.industry,
@@ -228,7 +303,8 @@ const toPublicUser = (row, sessionToken = "") => ({
   id: row.id,
   name: row.full_name,
   email: row.email,
-  provider: row.provider,
+  login: row.login || row.email,
+  provider: row.provider === "Odoo" ? "Support" : row.provider,
   company: row.company_name
     ? {
         name: row.company_name,
@@ -322,7 +398,7 @@ let odooRequestId = 1;
 const odooJsonRpc = async (path, params, useSession = true) => {
   const config = getOdooConfig();
   if (!config) {
-    const error = new Error("Odoo support portal is not configured.");
+    const error = new Error("Support portal is not configured.");
     error.status = 503;
     throw error;
   }
@@ -344,7 +420,7 @@ const odooJsonRpc = async (path, params, useSession = true) => {
   const payload = await response.json().catch(() => null);
   if (!response.ok || payload?.error) {
     const message =
-      payload?.error?.data?.message || payload?.error?.message || "Odoo request failed.";
+      payload?.error?.data?.message || payload?.error?.message || "Support system request failed.";
     const error = new Error(message);
     error.status = response.status || 502;
     throw error;
@@ -359,7 +435,7 @@ const odooJsonRpc = async (path, params, useSession = true) => {
 const authenticateOdoo = async () => {
   const config = getOdooConfig();
   if (!config) {
-    const error = new Error("Odoo support portal is not configured.");
+    const error = new Error("Support portal is not configured.");
     error.status = 503;
     throw error;
   }
@@ -375,7 +451,7 @@ const authenticateOdoo = async () => {
   );
 
   if (!result?.uid) {
-    const error = new Error("Odoo authentication failed.");
+    const error = new Error("Support system authentication failed.");
     error.status = 502;
     throw error;
   }
@@ -427,6 +503,84 @@ const stripHtml = (value) =>
 const formatMany2one = (value) =>
   Array.isArray(value) && value.length >= 2 ? { id: value[0], name: value[1] } : null;
 
+const publicIdentityValue = (login, email) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (isValidEmail(normalizedEmail)) {
+    return normalizedEmail;
+  }
+
+  const normalizedLogin = normalizeEmail(login);
+  return normalizedLogin || trim(login) || "support-user";
+};
+
+const upsertOdooAccount = (odooUser, requestedLogin) => {
+  const partner = formatMany2one(odooUser.partner_id);
+  const company = formatMany2one(odooUser.company_id);
+  const login = trim(odooUser.login) || trim(requestedLogin);
+  const email = publicIdentityValue(login, odooUser.email);
+  const name = trim(odooUser.name) || login || email;
+  const companyName = company?.name || partner?.name || "Customer";
+  const partnerId = partner?.id || null;
+  const existing = getUserByOdooIdentity.get(odooUser.id, login, email);
+
+  let userId = existing?.id;
+  if (existing) {
+    updateOdooUser.run(name, email, login, odooUser.id, partnerId, existing.id);
+  } else {
+    const result = insertOdooUser.run(name, email, login, odooUser.id, partnerId);
+    userId = result.lastInsertRowid;
+  }
+
+  upsertCompany.run(userId, companyName, "Customer", null, null);
+  return getUserByEmail.get(email);
+};
+
+const authenticateOdooCustomer = async (login, password) => {
+  const config = getOdooConfig();
+  if (!config) {
+    const error = new Error("Support portal is not configured.");
+    error.status = 503;
+    throw error;
+  }
+
+  let result;
+  try {
+    ({ result } = await odooJsonRpc(
+      "/web/session/authenticate",
+      {
+        db: config.dbName,
+        login,
+        password,
+        context: {},
+      },
+      false
+    ));
+  } catch (error) {
+    const authError = new Error("Invalid username or password.");
+    authError.status = error?.status === 503 ? 503 : 401;
+    throw authError;
+  }
+
+  if (!result?.uid) {
+    const error = new Error("Invalid username or password.");
+    error.status = 401;
+    throw error;
+  }
+
+  const [odooUser] = await callOdoo("res.users", "search_read", [[["id", "=", result.uid]]], {
+    fields: ["id", "name", "login", "email", "partner_id", "company_id", "share", "active"],
+    limit: 1,
+  });
+
+  if (!odooUser?.active) {
+    const error = new Error("This user is inactive. Contact ABiT support.");
+    error.status = 403;
+    throw error;
+  }
+
+  return upsertOdooAccount(odooUser, login);
+};
+
 const combineOr = (conditions) => {
   const valid = conditions.filter(Boolean);
   if (!valid.length) {
@@ -453,13 +607,21 @@ const stateLabel = (state) =>
     done: "Ready",
   }[String(state || "normal")] || "In progress");
 
+const sanitizePortalText = (value) =>
+  String(value ?? "")
+    .replace(/odoo\s*bot/gi, "ABiT Team")
+    .replace(/\bodoo\b/gi, "ERP");
+
 const isDoneStage = (stageName) => /done|complete|closed|cancelled/i.test(stageName || "");
 
 const getCustomerOdooContext = async (user) => {
-  const email = normalizeEmail(user.email);
+  const email = isValidEmail(normalizeEmail(user.email)) ? normalizeEmail(user.email) : "";
+  const login = trim(user.login || user.email);
+  const odooPartnerId = Number(user.odoo_partner_id || 0);
   const companyName = trim(user.company_name);
   const allowCompanyMatch = String(process.env.ODOO_MATCH_COMPANY_NAME || "").toLowerCase() === "true";
   const partnerDomain = combineOr([
+    odooPartnerId > 0 ? ["id", "=", odooPartnerId] : null,
     email ? ["email", "=", email] : null,
     allowCompanyMatch && companyName ? ["name", "=", companyName] : null,
   ]);
@@ -482,6 +644,7 @@ const getCustomerOdooContext = async (user) => {
 
   return {
     email,
+    login,
     companyName,
     partners,
     partnerIds: Array.from(partnerIds),
@@ -490,24 +653,24 @@ const getCustomerOdooContext = async (user) => {
 
 const mapTicket = (ticket) => ({
   id: ticket.id,
-  title: ticket.name,
-  stage: formatMany2one(ticket.stage_id)?.name || "New",
+  title: sanitizePortalText(ticket.name),
+  stage: sanitizePortalText(formatMany2one(ticket.stage_id)?.name || "New"),
   state: stateLabel(ticket.kanban_state),
   priority: priorityLabel(ticket.priority),
-  owner: formatMany2one(ticket.user_id)?.name || "Unassigned",
-  project: formatMany2one(ticket.project_id)?.name || "",
-  customer: formatMany2one(ticket.partner_id)?.name || ticket.partner_email || "",
+  owner: sanitizePortalText(formatMany2one(ticket.user_id)?.name || "Unassigned"),
+  project: sanitizePortalText(formatMany2one(ticket.project_id)?.name || ""),
+  customer: sanitizePortalText(formatMany2one(ticket.partner_id)?.name || ticket.partner_email || ""),
   updatedAt: ticket.write_date,
   createdAt: ticket.create_date,
 });
 
 const mapTask = (task) => ({
   id: task.id,
-  title: task.name,
-  stage: formatMany2one(task.stage_id)?.name || "Open",
+  title: sanitizePortalText(task.name),
+  stage: sanitizePortalText(formatMany2one(task.stage_id)?.name || "Open"),
   priority: priorityLabel(task.priority),
-  project: formatMany2one(task.project_id)?.name || "",
-  customer: formatMany2one(task.partner_id)?.name || "",
+  project: sanitizePortalText(formatMany2one(task.project_id)?.name || ""),
+  customer: sanitizePortalText(formatMany2one(task.partner_id)?.name || ""),
   deadline: task.date_deadline || "",
   plannedHours: Number(task.planned_hours || 0),
   effectiveHours: Number(task.effective_hours || 0),
@@ -524,11 +687,11 @@ const mapProject = (project, tasks = []) => {
 
   return {
     id: project.id,
-    title: project.name,
-    stage: formatMany2one(project.stage_id)?.name || "Active",
-    owner: formatMany2one(project.user_id)?.name || "ABiT Team",
-    customer: formatMany2one(project.partner_id)?.name || "",
-    description: stripHtml(project.description).slice(0, 220),
+    title: sanitizePortalText(project.name),
+    stage: sanitizePortalText(formatMany2one(project.stage_id)?.name || "Active"),
+    owner: sanitizePortalText(formatMany2one(project.user_id)?.name || "ABiT Team"),
+    customer: sanitizePortalText(formatMany2one(project.partner_id)?.name || ""),
+    description: sanitizePortalText(stripHtml(project.description).slice(0, 220)),
     openTasks: Math.max(totalTasks - doneCount, 0),
     totalTasks,
     progress,
@@ -637,7 +800,7 @@ const fetchSupportOverview = async (user) => {
       company: user.company_name || "",
       matchedPartners: context.partners.map((partner) => ({
         id: partner.id,
-        name: partner.name,
+        name: sanitizePortalText(partner.name),
         email: partner.email || "",
       })),
     },
@@ -670,13 +833,17 @@ const createSupportTicket = async (user, body) => {
 
   const context = await getCustomerOdooContext(user);
   const firstPartnerId = context.partnerIds[0] || null;
+  const submittedBy = context.email || context.login || user.email || user.login || "";
   const values = {
     name: payload.subject,
-    description: `<p>${htmlEscape(payload.message).replace(/\n/g, "<br>")}</p><p><strong>Submitted by:</strong> ${htmlEscape(user.full_name)} (${htmlEscape(user.email)})</p>`,
-    partner_email: context.email,
+    description: `<p>${htmlEscape(payload.message).replace(/\n/g, "<br>")}</p><p><strong>Submitted by:</strong> ${htmlEscape(user.full_name)} (${htmlEscape(submittedBy)})</p>`,
     priority: payload.priority,
     kanban_state: "normal",
   };
+
+  if (context.email) {
+    values.partner_email = context.email;
+  }
 
   if (firstPartnerId) {
     values.partner_id = firstPartnerId;
@@ -708,6 +875,173 @@ const createSupportTicket = async (user, body) => {
   return mapTicket(ticket);
 };
 
+const supportRecoveryMessage =
+  "If this account is registered, recovery instructions were sent to the registered contact.";
+
+const findSupportRecoveryUser = async (login) => {
+  const requestedLogin = trim(login);
+  const email = normalizeEmail(requestedLogin);
+  const domain = combineOr([
+    requestedLogin ? ["login", "=", requestedLogin] : null,
+    isValidEmail(email) ? ["email", "=", email] : null,
+  ]);
+
+  if (!domain.length) {
+    return null;
+  }
+
+  const users = await callOdoo("res.users", "search_read", [domain], {
+    fields: ["id", "name", "login", "email", "partner_id", "active"],
+    limit: 1,
+  });
+
+  return Array.isArray(users) ? users[0] || null : null;
+};
+
+const getRecoveryContact = async (user) => {
+  const partner = formatMany2one(user?.partner_id);
+  const contact = {
+    email: trim(user?.email),
+    phone: "",
+  };
+
+  if (!partner?.id) {
+    return contact;
+  }
+
+  const partners = await callOdoo("res.partner", "search_read", [[["id", "=", partner.id]]], {
+    fields: ["email", "mobile", "phone"],
+    limit: 1,
+  });
+  const partnerRecord = Array.isArray(partners) ? partners[0] || null : null;
+  contact.email ||= trim(partnerRecord?.email);
+  contact.phone = trim(partnerRecord?.mobile) || trim(partnerRecord?.phone);
+  return contact;
+};
+
+const normalizeWhatsappNumber = (phone) => {
+  const normalized = trim(phone).replace(/[^\d+]/g, "");
+  if (!normalized) {
+    return "";
+  }
+  return normalized.startsWith("00") ? `+${normalized.slice(2)}` : normalized;
+};
+
+const recoveryNotificationText = (name) =>
+  `Password recovery was requested for your ABiT support account${name ? ` (${name})` : ""}. For your security, use the recovery email or contact ABiT support if you did not request this.`;
+
+const sendTwilioWhatsapp = async (phone, message) => {
+  const accountSid = trim(process.env.TWILIO_ACCOUNT_SID);
+  const authToken = trim(process.env.TWILIO_AUTH_TOKEN);
+  const from = trim(process.env.TWILIO_WHATSAPP_FROM);
+  if (!accountSid || !authToken || !from) {
+    return false;
+  }
+
+  const to = phone.startsWith("whatsapp:") ? phone : `whatsapp:${phone}`;
+  const body = new URLSearchParams({ From: from, To: to, Body: message });
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("WhatsApp recovery notification failed.");
+  }
+
+  return true;
+};
+
+const sendMetaWhatsapp = async (phone, message) => {
+  const token = trim(process.env.META_WA_TOKEN);
+  const phoneNumberId = trim(process.env.META_WA_PHONE_NUMBER_ID);
+  if (!token || !phoneNumberId) {
+    return false;
+  }
+
+  const to = normalizeWhatsappNumber(phone).replace(/^\+/, "");
+  if (!to) {
+    return false;
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: message },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("WhatsApp recovery notification failed.");
+  }
+
+  return true;
+};
+
+const sendWhatsappRecoveryNotification = async (phone, message) => {
+  const normalizedPhone = normalizeWhatsappNumber(phone);
+  if (!normalizedPhone) {
+    return false;
+  }
+
+  const provider = trim(process.env.WHATSAPP_PROVIDER).toLowerCase();
+  if (provider === "twilio") {
+    return sendTwilioWhatsapp(normalizedPhone, message);
+  }
+  if (provider === "meta") {
+    return sendMetaWhatsapp(normalizedPhone, message);
+  }
+
+  return (await sendMetaWhatsapp(normalizedPhone, message)) || (await sendTwilioWhatsapp(normalizedPhone, message));
+};
+
+const requestSupportPasswordRecovery = async (login) => {
+  if (!getOdooConfig()) {
+    return;
+  }
+
+  const user = await findSupportRecoveryUser(login);
+  if (!user?.id || !user.active) {
+    return;
+  }
+
+  const contact = await getRecoveryContact(user);
+  const deliveryTasks = [];
+
+  if (contact.email || isValidEmail(normalizeEmail(user.login))) {
+    deliveryTasks.push(callOdoo("res.users", "action_reset_password", [[user.id]]));
+  }
+
+  if (contact.phone) {
+    deliveryTasks.push(
+      sendWhatsappRecoveryNotification(contact.phone, recoveryNotificationText(trim(user.name)))
+    );
+  }
+
+  if (!deliveryTasks.length) {
+    return;
+  }
+
+  const results = await Promise.allSettled(deliveryTasks);
+  if (results.every((result) => result.status === "rejected")) {
+    throw results[0].reason;
+  }
+};
+
 const getRegistrationPayload = (body) => {
   const source = body && typeof body === "object" ? body : {};
   const company = source.company && typeof source.company === "object" ? source.company : {};
@@ -733,6 +1067,11 @@ const getRegistrationPayload = (body) => {
 };
 
 const handleRegister = async (request, response) => {
+  sendJson(response, 410, {
+    error: "Customer accounts are provisioned by ABiT. Please use your assigned support login.",
+  });
+  return;
+
   const body = await readJsonBody(request);
   const payload = getRegistrationPayload(body);
 
@@ -757,6 +1096,7 @@ const handleRegister = async (request, response) => {
     db.exec("BEGIN IMMEDIATE");
     const result = insertUser.run(
       payload.name,
+      payload.email,
       payload.email,
       hashPassword(payload.password),
       "Email",
@@ -792,11 +1132,30 @@ const handleRegister = async (request, response) => {
 
 const handleSignin = async (request, response) => {
   const body = await readJsonBody(request);
-  const email = normalizeEmail(body?.email);
+  const login = trim(body?.login ?? body?.username ?? body?.email);
   const password = typeof body?.password === "string" ? body.password : "";
 
-  if (!isValidEmail(email) || !password) {
-    sendJson(response, 422, { error: "Email and password are required." });
+  if (!login || !password) {
+    sendJson(response, 422, { error: "Username and password are required." });
+    return;
+  }
+
+  if (getOdooConfig()) {
+    try {
+      const user = await authenticateOdooCustomer(login, password);
+      const sessionToken = createSession(user.id);
+      sendJson(response, 200, { user: toPublicUser(user, sessionToken) });
+    } catch (error) {
+      sendJson(response, error.status || 401, {
+        error: error instanceof Error ? error.message : "Invalid username or password.",
+      });
+    }
+    return;
+  }
+
+  const email = normalizeEmail(login);
+  if (!isValidEmail(email)) {
+    sendJson(response, 422, { error: "A valid email address is required in local account mode." });
     return;
   }
 
@@ -811,6 +1170,11 @@ const handleSignin = async (request, response) => {
 };
 
 const handleSocialAuth = async (request, response) => {
+  sendJson(response, 410, {
+    error: "Customer support access uses ABiT-issued credentials only.",
+  });
+  return;
+
   const body = await readJsonBody(request);
   const provider = trim(body?.provider);
   const accessToken = trim(body?.accessToken);
@@ -844,7 +1208,7 @@ const handleSocialAuth = async (request, response) => {
   if (user) {
     updateSocialUser.run(name, provider, googleSub, user.id);
   } else {
-    insertUser.run(name, email, null, provider, googleSub);
+    insertUser.run(name, email, email, null, provider, googleSub);
     created = true;
   }
 
@@ -872,6 +1236,27 @@ const handleSupportTicketCreate = async (request, response) => {
   const body = await readJsonBody(request);
   const ticket = await createSupportTicket(user, body);
   sendJson(response, 201, { ticket });
+};
+
+const handleSupportForgotPassword = async (request, response) => {
+  const body = await readJsonBody(request);
+  const login = trim(body?.login ?? body?.username ?? body?.email);
+
+  if (!login) {
+    sendJson(response, 422, { error: "Enter your username or registered email first." });
+    return;
+  }
+
+  try {
+    await requestSupportPasswordRecovery(login);
+  } catch (error) {
+    console.warn(
+      "Support password recovery request could not be completed:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+
+  sendJson(response, 200, { message: supportRecoveryMessage });
 };
 
 const serveStatic = (request, response, requestUrl) => {
@@ -942,6 +1327,11 @@ const server = createServer(async (request, response) => {
 
     if (requestUrl.pathname === "/api/support/overview" && request.method === "GET") {
       await handleSupportOverview(request, response);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/support/forgot-password" && request.method === "POST") {
+      await handleSupportForgotPassword(request, response);
       return;
     }
 
