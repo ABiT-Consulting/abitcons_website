@@ -5,34 +5,35 @@
 Copy `.env.example` to `.env` and configure:
 
 ```bash
-VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_API_BASE_URL=
 PORT=3000
 SQLITE_PATH=data/abitcons.sqlite
+SESSION_TTL_HOURS=168
+ODOO_ENV_PATH=
+ODOO_URL=
+ODOO_DB=
+ODOO_USERNAME=
+ODOO_PASSWORD=
+ODOO_HELPDESK_TEAM_ID=
+ODOO_MATCH_COMPANY_NAME=false
+WHATSAPP_PROVIDER=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=
+META_WA_TOKEN=
+META_WA_PHONE_NUMBER_ID=
 ```
 
-- `VITE_GOOGLE_CLIENT_ID` enables real Google sign-in on `#account-access`.
-- `VITE_GA_MEASUREMENT_ID` enables GA4 page view tracking, including hash route changes.
+- `VITE_GA_MEASUREMENT_ID` enables GA4 page view tracking. Production builds already use the public GA4 measurement ID in `.env.production`; override it in `.env` only if you need a different property locally.
 - `VITE_API_BASE_URL` can point the frontend at a separate API host. Leave it empty locally so Vite proxies `/api/*` to `http://127.0.0.1:3000`. Production builds use same-origin `/api/*` by default.
 - `PORT` controls the Node backend server port.
-- `SQLITE_PATH` controls where registration data is stored.
-- Static/PHP hosting can use the fallback endpoints copied from `public/api/*.php`. Set `ABIT_PORTAL_DATA_DIR` on the host to store portal accounts outside the web root; if it is unset, the PHP fallback writes to `../abit_portal_data` relative to the deployed web root.
-
-## Google OAuth production setup
-
-Configure your Google Cloud OAuth app with the website domains used by this project.
-
-### Authorized JavaScript origins
-
-- `https://abitcons.com`
-- `http://localhost:3000` (or your actual local dev port)
-
-### Authorized redirect URI (only if popup/redirect callback is used)
-
-- `https://abitcons.com/oauth-popup.html`
-
-> Note: this project currently uses Google Identity Services token popup flow (`select_account`) directly from the main page, so the redirect URI is optional unless you enable redirect-based callbacks.
+- `SQLITE_PATH` stores short-lived website sessions for users who successfully authenticate against Odoo.
+- `ODOO_URL`, `ODOO_DB`, `ODOO_USERNAME`, and `ODOO_PASSWORD` connect the portal to Odoo. Customer users sign in with their own Odoo username/password; the service account is used server-side to read helpdesk/project data for the matched customer partner.
+- `ODOO_HELPDESK_TEAM_ID` is optional and assigns newly created support tickets to a specific Odoo helpdesk team.
+- `ODOO_MATCH_COMPANY_NAME=true` optionally lets the portal match records by company name when partner/email matching is not enough.
+- `WHATSAPP_PROVIDER` can be `twilio` or `meta`; the matching `TWILIO_*` or `META_WA_*` values enable optional WhatsApp recovery notifications.
+- Static/PHP hosting can use the fallback endpoints copied from `public/api/*.php`. Set `ABIT_PORTAL_DATA_DIR` on the host to store session metadata outside the web root; if it is unset, the PHP fallback writes to `../abit_portal_data` relative to the deployed web root.
 
 ## Local development
 

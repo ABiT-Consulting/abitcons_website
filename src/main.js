@@ -14,6 +14,7 @@ const phpApiFallbackRoutes = new Map([
   ["/api/signin", "/api/signin.php"],
   ["/api/social-auth", "/api/social-auth.php"],
   ["/api/support/overview", "/api/support-overview.php"],
+  ["/api/support/forgot-password", "/api/support-forgot-password.php"],
   ["/api/support/tickets", "/api/support-ticket.php"],
 ]);
 
@@ -86,8 +87,15 @@ const apiJsonRequest = async (path, { method = "GET", payload = null, auth = fal
     ({ data, rawBody } = await parseApiResponse(response));
   }
 
+  const trimmedBody = rawBody.trim();
+  if (response.ok && trimmedBody && !trimmedBody.startsWith("{") && !trimmedBody.startsWith("[")) {
+    throw new Error("Account server returned an invalid response.");
+  }
+
   if (!response.ok) {
-    throw new Error(data.error || "Request could not be completed.");
+    const error = new Error(data.error || "Request could not be completed.");
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -244,6 +252,23 @@ if ("IntersectionObserver" in window && sectionTargets.length) {
 
   sectionTargets.forEach((section) => navObserver.observe(section));
 }
+
+const authNavLinks = {
+  signin: Array.from(document.querySelectorAll('[data-auth-link="signin"]')),
+  support: Array.from(document.querySelectorAll('[data-auth-link="support"]')),
+};
+
+const setAuthNavigation = (user = readStoredAuthUser()) => {
+  const isSignedIn = Boolean(user?.sessionToken);
+  authNavLinks.signin.forEach((link) => {
+    link.hidden = isSignedIn;
+  });
+  authNavLinks.support.forEach((link) => {
+    link.hidden = !isSignedIn;
+  });
+};
+
+setAuthNavigation();
 
 const revealElements = Array.from(document.querySelectorAll("[data-reveal]"));
 if ("IntersectionObserver" in window) {
@@ -655,7 +680,14 @@ if (authPanel) {
 
 const supportPortal = document.querySelector("[data-support-portal]");
 if (supportPortal) {
+  const signedOutShell = supportPortal.querySelector("[data-support-signed-out]");
+  const signedInShell = supportPortal.querySelector("[data-support-signed-in]");
+  const loginForm = supportPortal.querySelector("[data-support-login-form]");
+  const forgotPasswordButton = supportPortal.querySelector("[data-support-forgot-password]");
   const ticketForm = supportPortal.querySelector("[data-support-ticket-form]");
+  const authStatus = supportPortal.querySelector("[data-auth-status]");
+  const authFeedback = supportPortal.querySelector("[data-auth-feedback]");
+  const logoutButton = supportPortal.querySelector("[data-auth-logout]");
   const alertBox = supportPortal.querySelector("[data-support-alert]");
   const userHeading = supportPortal.querySelector("[data-support-user]");
   const userCopy = supportPortal.querySelector("[data-support-copy]");
@@ -671,8 +703,13 @@ if (supportPortal) {
   let isSupportLoading = false;
   let queuedSupportRefresh = false;
 
-  const escapeText = (value) =>
+  const sanitizePortalText = (value) =>
     String(value ?? "")
+      .replace(/odoo\s*bot/gi, "ABiT Team")
+      .replace(/\bodoo\b/gi, "ERP");
+
+  const escapeText = (value) =>
+    sanitizePortalText(value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -712,6 +749,37 @@ if (supportPortal) {
     }
     alertBox.textContent = message;
     alertBox.classList.toggle("is-error", isError);
+  };
+
+  const setAuthFeedback = (message, isError = false) => {
+    if (!authFeedback) {
+      return;
+    }
+    authFeedback.textContent = message;
+    authFeedback.classList.toggle("is-error", isError);
+  };
+
+  const setAuthStatus = (message, isError = false) => {
+    if (!authStatus) {
+      return;
+    }
+    authStatus.textContent = message;
+    authStatus.classList.toggle("is-error", isError);
+  };
+
+  const persistSupportUser = (user) => {
+    if (user?.sessionToken) {
+      localStorage.setItem(authStorageKey, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(authStorageKey);
+    }
+    setAuthNavigation(user);
+    window.dispatchEvent(new CustomEvent("abit-auth-change", { detail: user || null }));
+  };
+
+  const setSupportVisibility = (isSignedIn) => {
+    if (signedOutShell) signedOutShell.hidden = isSignedIn;
+    if (signedInShell) signedInShell.hidden = !isSignedIn;
   };
 
   const setFormDisabled = (disabled) => {
@@ -827,17 +895,19 @@ if (supportPortal) {
   };
 
   const renderSignedOut = () => {
+    setSupportVisibility(false);
     if (userHeading) userHeading.textContent = "Sign in to view your workspace.";
     if (userCopy) {
       userCopy.textContent =
-        "Use the customer account above to load your support tickets, active project status, and assigned delivery tasks.";
+        "Use your ABiT-issued username and password to load your workspace.";
     }
     renderMetrics();
     renderTickets([]);
     renderProjects([]);
     renderTasks([]);
     setFormDisabled(true);
-    setAlert("Sign in to load your Odoo support workspace.");
+    setAlert("Sign in to load your support workspace.");
+    setAuthStatus("Not signed in.");
   };
 
   const clearSupportRefresh = () => {
@@ -875,13 +945,15 @@ if (supportPortal) {
     }
 
     isSupportLoading = true;
+    setSupportVisibility(true);
     if (userHeading) userHeading.textContent = `${user.company?.name || user.name || "Customer"} workspace`;
     if (userCopy) {
-      userCopy.textContent = `Signed in as ${user.email}. Your updates are synced from Odoo.`;
+      userCopy.textContent = `Signed in as ${user.login || user.email}. Your updates are synced securely.`;
     }
+    setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
     setFormDisabled(false);
     if (!silent) {
-      setAlert("Loading support workspace from Odoo...");
+      setAlert("Loading support workspace...");
     }
 
     try {
@@ -893,7 +965,14 @@ if (supportPortal) {
       const updated = formatSyncTime(overview.summary?.lastUpdated);
       setAlert(`Workspace synced${updated ? ` ${updated}` : ""}.`);
     } catch (error) {
-      setAlert(error instanceof Error ? error.message : "Support workspace could not be loaded.", true);
+      const message =
+        error instanceof Error ? error.message : "Support workspace could not be loaded.";
+      setAlert(message, true);
+      if (error?.status === 401) {
+        persistSupportUser(null);
+        renderSignedOut();
+        setAuthFeedback("Your session expired. Sign in again.", true);
+      }
     } finally {
       isSupportLoading = false;
       if (queuedSupportRefresh) {
@@ -902,6 +981,77 @@ if (supportPortal) {
       }
     }
   };
+
+  loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const login = loginForm.elements.login?.value?.trim() || "";
+    const password = loginForm.elements.password?.value || "";
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+
+    if (!login || !password) {
+      setAuthFeedback("Username and password are required.", true);
+      return;
+    }
+
+    try {
+      if (submitButton) submitButton.disabled = true;
+      setAuthFeedback("");
+      setAuthStatus("Signing in...");
+      const { user } = await apiJsonRequest("/api/signin", {
+        method: "POST",
+        payload: { login, password },
+      });
+      if (!user?.sessionToken) {
+        throw new Error("Sign-in response was invalid. Please contact ABiT support.");
+      }
+      persistSupportUser(user);
+      loginForm.reset();
+      setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Sign-in could not be completed. Please try again.";
+      setAuthStatus("Not signed in.", true);
+      setAuthFeedback(message, true);
+      persistSupportUser(null);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+
+  forgotPasswordButton?.addEventListener("click", async () => {
+    const login = loginForm?.elements.login?.value?.trim() || "";
+
+    if (!login) {
+      setAuthFeedback("Enter your username or registered email first.", true);
+      loginForm?.elements.login?.focus();
+      return;
+    }
+
+    try {
+      forgotPasswordButton.disabled = true;
+      setAuthFeedback("");
+      setAuthStatus("Sending recovery instructions...");
+      const { message } = await apiJsonRequest("/api/support/forgot-password", {
+        method: "POST",
+        payload: { login },
+      });
+      setAuthStatus("Not signed in.");
+      setAuthFeedback(
+        message ||
+          "If this account is registered, recovery instructions were sent to the registered contact."
+      );
+    } catch (error) {
+      setAuthStatus("Not signed in.", true);
+      setAuthFeedback(
+        error instanceof Error
+          ? error.message
+          : "Recovery instructions could not be sent. Please contact ABiT support.",
+        true
+      );
+    } finally {
+      forgotPasswordButton.disabled = false;
+    }
+  });
 
   ticketForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -925,7 +1075,7 @@ if (supportPortal) {
 
     try {
       if (submitButton) submitButton.disabled = true;
-      setAlert("Creating support ticket in Odoo...");
+      setAlert("Creating support ticket...");
       await apiJsonRequest("/api/support/tickets", {
         method: "POST",
         payload,
@@ -939,6 +1089,13 @@ if (supportPortal) {
     } finally {
       if (submitButton) submitButton.disabled = false;
     }
+  });
+
+  logoutButton?.addEventListener("click", () => {
+    persistSupportUser(null);
+    clearSupportRefresh();
+    renderSignedOut();
+    setAuthFeedback("You have been signed out.");
   });
 
   window.addEventListener("abit-auth-change", () => {
