@@ -1,5 +1,4 @@
 <?php
 require __DIR__ . '/_bootstrap.php';
 
-api_support_forgot_password();
-
+api_bridge_proxy('/api/support/forgot-password', 'POST');

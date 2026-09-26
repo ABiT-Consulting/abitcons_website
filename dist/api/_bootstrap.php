@@ -1229,3 +1229,57 @@ function api_support_ticket_create(): void
     ]);
 }
 
+
+
+function api_task_portal_bridge_url(): string
+{
+    return rtrim(api_trim(getenv('ABIT_TASK_PORTAL_BRIDGE_URL') ?: 'https://abitask.abit.ai'), '/');
+}
+
+function api_bridge_proxy(string $path, string $method): void
+{
+    api_require_method($method);
+    if (!function_exists('curl_init')) {
+        api_send_json(503, ['error' => 'Support portal bridge requires PHP cURL.']);
+    }
+
+    $headers = ['Accept: application/json'];
+    $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    if ($authorization !== '') {
+        $headers[] = 'Authorization: ' . $authorization;
+    }
+
+    $body = '';
+    if ($method !== 'GET') {
+        $body = file_get_contents('php://input') ?: '';
+        $headers[] = 'Content-Type: application/json';
+    }
+
+    $curl = curl_init(api_task_portal_bridge_url() . $path);
+    curl_setopt_array($curl, [
+        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_FOLLOWLOCATION => false,
+    ]);
+    if ($method !== 'GET') {
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+    }
+
+    $responseBody = curl_exec($curl);
+    $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($curl);
+    curl_close($curl);
+
+    if (!is_string($responseBody) || $status === 0) {
+        api_send_json(502, ['error' => $curlError ?: 'Support portal bridge is unavailable.']);
+    }
+
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo $responseBody;
+    exit;
+}
