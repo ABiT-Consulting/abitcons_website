@@ -888,6 +888,8 @@ if (supportPortal) {
             task.deadline ? ["Deadline", formatDate(task.deadline)] : null,
             ["Remaining", `${Number(task.remainingHours || 0).toFixed(1)}h`],
           ])}
+          ${task.description ? `<p>${escapeText(task.description)}</p>` : ""}
+          ${task.completedBy ? `<p>Completed by: ${escapeText(task.completedBy)}</p>` : ""}
           <p>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</p>
         </article>`
       )
@@ -1005,6 +1007,9 @@ if (supportPortal) {
         throw new Error("Sign-in response was invalid. Please contact ABiT support.");
       }
       persistSupportUser(user);
+      if (user.clientCode) {
+        window.location.hash = `#support-portal/${encodeURIComponent(user.clientCode)}`;
+      }
       loginForm.reset();
       setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
     } catch (error) {

@@ -1,5 +1,4 @@
 <?php
 require __DIR__ . '/_bootstrap.php';
 
-api_signin();
-
+api_bridge_proxy('/api/signin', 'POST');
