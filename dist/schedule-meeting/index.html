@@ -118,7 +118,15 @@
               <p class="eyebrow">Online Booking</p>
               <h2>Pick your preferred date and time.</h2>
             </div>
-            <div class="calendly-inline-widget" data-url="https://calendly.com/abitcons-sales/" style="min-width: 320px; height: 700px"></div>
+            <iframe
+              src="https://calendly.com/abitcons-sales/"
+              title="Schedule a meeting with ABiT Consulting"
+              style="width: 100%; min-width: 0; height: 700px; border: 0; border-radius: 18px; background: #fff"
+              loading="eager"
+            ></iframe>
+            <p style="margin-top: 12px; text-align: center">
+              If the booking calendar does not appear, <a href="https://calendly.com/abitcons-sales/" target="_blank" rel="noopener noreferrer">open Calendly directly</a>.
+            </p>
           </div>
         </div>
       </section>
@@ -169,8 +177,25 @@
       </div>
       <p class="footer-bottom">(c) 2024 ABiT Consulting. All rights reserved.</p>
     </footer>
+    <script>
+      (() => {
+        document.querySelectorAll('[data-reveal]').forEach((element) => element.classList.add('is-visible'));
 
-    <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
-    <script type="module" src="/src/main.js"></script>
+        const header = document.querySelector('[data-header]');
+        const toggle = document.querySelector('[data-nav-toggle]');
+        if (!header || !toggle) return;
+
+        const setOpen = (open) => {
+          header.classList.toggle('nav-open', open);
+          toggle.setAttribute('aria-expanded', String(open));
+          document.body.classList.toggle('nav-is-open', open);
+        };
+
+        toggle.addEventListener('click', () => setOpen(!header.classList.contains('nav-open')));
+        document.querySelectorAll('[data-nav-menu] a').forEach((link) => {
+          link.addEventListener('click', () => setOpen(false));
+        });
+      })();
+    </script>
   </body>
 </html>
