@@ -1,4 +1,4 @@
-const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
+﻿const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
 }
@@ -693,6 +693,7 @@ if (supportPortal) {
   const accessRequestForm = supportPortal.querySelector("[data-support-signup-form]");
   const accessRequestFeedback = supportPortal.querySelector("[data-support-signup-feedback]");
   const ticketForm = supportPortal.querySelector("[data-support-ticket-form]");
+  const selectedFilesBox = supportPortal.querySelector("[data-support-selected-files]");
   const authStatus = supportPortal.querySelector("[data-auth-status]");
   const authFeedback = supportPortal.querySelector("[data-auth-feedback]");
   const logoutButton = supportPortal.querySelector("[data-auth-logout]");
@@ -906,6 +907,25 @@ if (supportPortal) {
       .join("");
   };
 
+  const cleanRichText = (value = "") => {
+    const source = String(value || "");
+    if (!source) return "";
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(source, "text/html");
+    doc.querySelectorAll("br").forEach((node) => node.replaceWith("\n"));
+    doc.querySelectorAll("p, div, li, hr").forEach((node) => {
+      if (node.tagName === "LI") node.prepend("â€¢ ");
+      node.append("\n");
+    });
+    return (doc.body.textContent || "")
+      .replace(/Migration Batch:[^\n]*/gi, "")
+      .replace(/ERPTask ID:[^\n]*/gi, "")
+      .replace(/ERPStage:[^\n]*/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const renderTasks = (tasks = []) => {
     if (taskCount) taskCount.textContent = String(tasks.length);
     if (!tasksList) return;
@@ -915,20 +935,28 @@ if (supportPortal) {
     }
 
     tasksList.innerHTML = tasks
-      .map(
-        (task) => `<article class="support-item">
-          <h4>${escapeText(task.title)}</h4>
+      .map((task) => {
+        const description = cleanRichText(task.description);
+        const stage = task.stage || "Open";
+        return `<article class="support-item support-task-card">
+          <div class="support-task-card__top">
+            <div>
+              <span class="support-task-card__eyebrow">${escapeText(task.project || "Support task")}</span>
+              <h4>${escapeText(cleanRichText(task.title) || task.title)}</h4>
+            </div>
+            <span class="support-task-status">${escapeText(stage)}</span>
+          </div>
           ${itemMeta([
-            ["Stage", task.stage],
-            task.project ? ["Project", task.project] : null,
             task.deadline ? ["Deadline", formatDate(task.deadline)] : null,
             ["Remaining", `${Number(task.remainingHours || 0).toFixed(1)}h`],
           ])}
-          ${task.description ? `<p>${escapeText(task.description)}</p>` : ""}
-          ${task.completedBy ? `<p>Completed by: ${escapeText(task.completedBy)}</p>` : ""}
-          <p>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</p>
-        </article>`
-      )
+          ${description ? `<div class="support-task-description">${escapeText(description).replace(/\n/g, "<br>")}</div>` : ""}
+          <div class="support-task-card__footer">
+            ${task.completedBy ? `<span>Completed by <strong>${escapeText(task.completedBy)}</strong></span>` : "<span>ERP-linked task</span>"}
+            <span>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</span>
+          </div>
+        </article>`;
+      })
       .join("");
   };
 
@@ -1146,6 +1174,23 @@ if (supportPortal) {
     }
   });
 
+  ticketForm?.elements.attachments?.addEventListener("change", () => {
+    const files = Array.from(ticketForm.elements.attachments.files || []);
+    if (!selectedFilesBox) return;
+    selectedFilesBox.hidden = files.length === 0;
+    selectedFilesBox.innerHTML = files
+      .map((file) => `<span>ðŸ“Ž ${escapeText(file.name)} <small>${(file.size / 1024 / 1024).toFixed(1)} MB</small></span>`)
+      .join("");
+  });
+
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || "").split(",").pop() || "");
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+      reader.readAsDataURL(file);
+    });
+
   ticketForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const user = readStoredAuthUser();
@@ -1155,10 +1200,27 @@ if (supportPortal) {
     }
 
     const submitButton = ticketForm.querySelector('button[type="submit"]');
+    const files = Array.from(ticketForm.elements.attachments?.files || []);
+    if (files.length > 5) {
+      setAlert("Please attach no more than 5 files.", true);
+      return;
+    }
+    if (files.some((file) => file.size > 10 * 1024 * 1024)) {
+      setAlert("Each attachment must be 10 MB or smaller.", true);
+      return;
+    }
+
     const payload = {
       subject: ticketForm.elements.subject?.value?.trim() || "",
       priority: ticketForm.elements.priority?.value || "1",
       message: ticketForm.elements.message?.value?.trim() || "",
+      attachments: await Promise.all(
+        files.map(async (file) => ({
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          contentBase64: await fileToBase64(file),
+        }))
+      ),
     };
 
     if (!payload.subject || !payload.message) {
@@ -1169,14 +1231,23 @@ if (supportPortal) {
     try {
       if (submitButton) submitButton.disabled = true;
       setAlert("Creating support ticket...");
-      await apiJsonRequest("/api/support/tickets", {
+      const createResult = await apiJsonRequest("/api/support/tickets", {
         method: "POST",
         payload,
         auth: true,
       });
       ticketForm.reset();
+      if (selectedFilesBox) {
+        selectedFilesBox.hidden = true;
+        selectedFilesBox.innerHTML = "";
+      }
       setAlert("Support ticket created. Refreshing your workspace...");
       await loadSupportOverview();
+      if (Array.isArray(createResult?.attachmentErrors) && createResult.attachmentErrors.length) {
+        setAlert("Task created, but " + createResult.attachmentErrors.length + " attachment(s) could not be uploaded to ERPNext.", true);
+      } else if (files.length) {
+        setAlert("Task created with " + files.length + " attachment(s) in ERPNext.");
+      }
     } catch (error) {
       setAlert(error instanceof Error ? error.message : "Support ticket could not be created.", true);
     } finally {
@@ -1646,3 +1717,4 @@ if (contactForm) {
     }
   );
 }
+
