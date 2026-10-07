@@ -1,3 +1,8 @@
+const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
+if (isDedicatedSupportHost) {
+  document.documentElement.classList.add("support-host");
+}
+
 const rawGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
 const isPlaceholderGoogleId =
   !rawGoogleClientId ||
@@ -14,6 +19,7 @@ const phpApiFallbackRoutes = new Map([
   ["/api/signin", "/api/signin.php"],
   ["/api/social-auth", "/api/social-auth.php"],
   ["/api/support/overview", "/api/support-overview.php"],
+  ["/api/support/signup", "/api/support-signup.php"],
   ["/api/support/forgot-password", "/api/support-forgot-password.php"],
   ["/api/support/tickets", "/api/support-ticket.php"],
 ]);
@@ -684,6 +690,8 @@ if (supportPortal) {
   const signedInShell = supportPortal.querySelector("[data-support-signed-in]");
   const loginForm = supportPortal.querySelector("[data-support-login-form]");
   const forgotPasswordButton = supportPortal.querySelector("[data-support-forgot-password]");
+  const accessRequestForm = supportPortal.querySelector("[data-support-signup-form]");
+  const accessRequestFeedback = supportPortal.querySelector("[data-support-signup-feedback]");
   const ticketForm = supportPortal.querySelector("[data-support-ticket-form]");
   const authStatus = supportPortal.querySelector("[data-auth-status]");
   const authFeedback = supportPortal.querySelector("[data-auth-feedback]");
@@ -780,6 +788,34 @@ if (supportPortal) {
   const setSupportVisibility = (isSignedIn) => {
     if (signedOutShell) signedOutShell.hidden = isSignedIn;
     if (signedInShell) signedInShell.hidden = !isSignedIn;
+  };
+
+  const supportWorkspaceHash = (clientCode) =>
+    clientCode ? `#support-portal/${encodeURIComponent(clientCode)}` : "#support-portal";
+
+  const syncSupportWorkspaceRoute = (user) => {
+    const clientCode = String(user?.clientCode || "").trim();
+    const expectedHash = supportWorkspaceHash(clientCode);
+    const requestedCode = window.location.hash.startsWith("#support-portal/")
+      ? decodeURIComponent(window.location.hash.slice("#support-portal/".length)).trim()
+      : "";
+
+    if (clientCode && requestedCode.toLowerCase() !== clientCode.toLowerCase()) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}${expectedHash}`
+      );
+      return;
+    }
+
+    if (isDedicatedSupportHost && !window.location.hash.startsWith("#support-portal")) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}${expectedHash}`
+      );
+    }
   };
 
   const setFormDisabled = (disabled) => {
@@ -947,6 +983,7 @@ if (supportPortal) {
     }
 
     isSupportLoading = true;
+    syncSupportWorkspaceRoute(user);
     setSupportVisibility(true);
     if (userHeading) userHeading.textContent = `${user.company?.name || user.name || "Customer"} workspace`;
     if (userCopy) {
@@ -1007,9 +1044,7 @@ if (supportPortal) {
         throw new Error("Sign-in response was invalid. Please contact ABiT support.");
       }
       persistSupportUser(user);
-      if (user.clientCode) {
-        window.location.hash = `#support-portal/${encodeURIComponent(user.clientCode)}`;
-      }
+      syncSupportWorkspaceRoute(user);
       loginForm.reset();
       setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
     } catch (error) {
@@ -1018,6 +1053,59 @@ if (supportPortal) {
       setAuthStatus("Not signed in.", true);
       setAuthFeedback(message, true);
       persistSupportUser(null);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+
+  accessRequestForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = accessRequestForm.querySelector('button[type="submit"]');
+    const payload = {
+      companyName: accessRequestForm.elements.companyName?.value?.trim() || "",
+      contactName: accessRequestForm.elements.contactName?.value?.trim() || "",
+      email: accessRequestForm.elements.email?.value?.trim() || "",
+      phone: accessRequestForm.elements.phone?.value?.trim() || "",
+      country: accessRequestForm.elements.country?.value?.trim() || "",
+      services: accessRequestForm.elements.services?.value?.trim() || "",
+      existingCustomerCode: accessRequestForm.elements.existingCustomerCode?.value?.trim() || "",
+    };
+
+    if (!payload.companyName || !payload.contactName || !payload.email) {
+      if (accessRequestFeedback) {
+        accessRequestFeedback.textContent = "Company, contact person, and email are required.";
+        accessRequestFeedback.classList.add("is-error");
+      }
+      return;
+    }
+
+    try {
+      if (submitButton) submitButton.disabled = true;
+      if (accessRequestFeedback) {
+        accessRequestFeedback.textContent = "Submitting access request...";
+        accessRequestFeedback.classList.remove("is-error");
+      }
+
+      const result = await apiJsonRequest("/api/support/signup", {
+        method: "POST",
+        payload,
+      });
+
+      const requestId = result.request?.id ? ` Reference: ${result.request.id}.` : "";
+      if (accessRequestFeedback) {
+        accessRequestFeedback.textContent =
+          (result.message ||
+            "Access request received. ABiT will provision your portal user after verification.") +
+          requestId;
+        accessRequestFeedback.classList.remove("is-error");
+      }
+      accessRequestForm.reset();
+    } catch (error) {
+      if (accessRequestFeedback) {
+        accessRequestFeedback.textContent =
+          error instanceof Error ? error.message : "Access request could not be submitted.";
+        accessRequestFeedback.classList.add("is-error");
+      }
     } finally {
       if (submitButton) submitButton.disabled = false;
     }
@@ -1107,6 +1195,27 @@ if (supportPortal) {
     loadSupportOverview();
     startSupportRefresh();
   });
+
+  window.addEventListener("hashchange", () => {
+    const user = readStoredAuthUser();
+    if (user?.sessionToken) {
+      syncSupportWorkspaceRoute(user);
+    } else if (isDedicatedSupportHost && !window.location.hash.startsWith("#support-portal")) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#support-portal`
+      );
+    }
+  });
+
+  if (isDedicatedSupportHost && !window.location.hash) {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#support-portal`
+    );
+  }
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
