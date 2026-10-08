@@ -1,4 +1,5 @@
-﻿const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
+const supportPortalHosts = new Set(["support.abitcons.com", "support.abit.ai"]);
+const isDedicatedSupportHost = supportPortalHosts.has(window.location.hostname.toLowerCase());
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
 }
@@ -11,7 +12,7 @@ const isPlaceholderGoogleId =
 const googleClientId = isPlaceholderGoogleId ? "" : rawGoogleClientId;
 const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "";
-const apiBaseUrl = configuredApiBaseUrl;
+const apiBaseUrl = isDedicatedSupportHost ? "https://abitask.abit.ai" : configuredApiBaseUrl;
 const authStorageKey = "abit-auth-user";
 const phpApiFallbackRoutes = new Map([
   ["/api/health", "/api/health.php"],

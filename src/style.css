@@ -1626,6 +1626,10 @@ body.nav-is-open { overflow: hidden; }
 .support-access-form .btn {
   width: 100%;
 }
+html:not(.support-host) #support-portal {
+  display: none !important;
+}
+
 html.support-host main > section:not(#support-portal),
 html.support-host footer {
   display: none !important;
