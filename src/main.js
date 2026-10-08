@@ -708,6 +708,10 @@ if (supportPortal) {
   const ticketCount = supportPortal.querySelector("[data-support-ticket-count]");
   const projectCount = supportPortal.querySelector("[data-support-project-count]");
   const taskCount = supportPortal.querySelector("[data-support-task-count]");
+  const supportTabButtons = Array.from(supportPortal.querySelectorAll("[data-support-tab]"));
+  const supportViews = Array.from(supportPortal.querySelectorAll("[data-support-view]"));
+  const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
+  const sidebarUser = supportPortal.querySelector("[data-support-sidebar-user]");
   const supportRefreshMs = 60_000;
   let supportRefreshTimer = null;
   let isSupportLoading = false;
@@ -819,6 +823,29 @@ if (supportPortal) {
       );
     }
   };
+
+  const activateSupportTab = (tabName = "dashboard") => {
+    const validTab = supportViews.some((view) => view.dataset.supportView === tabName)
+      ? tabName
+      : "dashboard";
+    supportTabButtons.forEach((button) => {
+      const active = button.dataset.supportTab === validTab;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-current", active ? "page" : "false");
+    });
+    supportViews.forEach((view) => {
+      const active = view.dataset.supportView === validTab;
+      view.hidden = !active;
+      view.classList.toggle("is-active", active);
+    });
+    if (isDedicatedSupportHost) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  supportTabButtons.forEach((button) => {
+    button.addEventListener("click", () => activateSupportTab(button.dataset.supportTab));
+  });
 
   const setFormDisabled = (disabled) => {
     ticketForm
@@ -1014,10 +1041,14 @@ if (supportPortal) {
     isSupportLoading = true;
     syncSupportWorkspaceRoute(user);
     setSupportVisibility(true);
-    if (userHeading) userHeading.textContent = `${user.company?.name || user.name || "Customer"} workspace`;
+    const workspaceName = user.company?.name || user.name || "Customer";
+    const signedInName = user.login || user.email || user.name || "Customer";
+    if (userHeading) userHeading.textContent = `${workspaceName} workspace`;
     if (userCopy) {
-      userCopy.textContent = `Signed in as ${user.login || user.email}. Your updates are synced securely.`;
+      userCopy.textContent = `Signed in as ${signedInName}. Your updates are synced securely.`;
     }
+    if (sidebarCompany) sidebarCompany.textContent = workspaceName;
+    if (sidebarUser) sidebarUser.textContent = `Signed in as ${signedInName}`;
     setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
     setFormDisabled(false);
     if (!silent) {
@@ -1244,6 +1275,7 @@ if (supportPortal) {
       }
       setAlert("Support ticket created. Refreshing your workspace...");
       await loadSupportOverview();
+      activateSupportTab("tasks");
       if (Array.isArray(createResult?.attachmentErrors) && createResult.attachmentErrors.length) {
         setAlert("Task created, but " + createResult.attachmentErrors.length + " attachment(s) could not be uploaded to ERPNext.", true);
       } else if (files.length) {
@@ -1288,6 +1320,8 @@ if (supportPortal) {
       `${window.location.pathname}${window.location.search}#support-portal`
     );
   }
+
+  activateSupportTab("dashboard");
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {

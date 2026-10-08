@@ -168,8 +168,8 @@
         ]
       }
     </script>
-    <link rel="stylesheet" crossorigin href="/assets/index-vq7jD4DT.css">
-    <script type="module" crossorigin src="/assets/index-CL3VsHyV.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-B_BfKodY.css">
+    <script type="module" crossorigin src="/assets/index-BM4Q9B_3.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -1107,92 +1107,150 @@
             </div>
           </div>
 
-          <div class="support-shell" data-support-signed-in data-reveal hidden>
-            <aside class="support-panel support-summary-panel">
-              <div>
+          <div class="support-shell support-app-shell" data-support-signed-in data-reveal hidden>
+            <aside class="support-panel support-app-sidebar">
+              <div class="support-app-identity">
                 <p class="eyebrow">Customer workspace</p>
-                <h3 data-support-user>Loading workspace...</h3>
-                <p data-support-copy>
-                  Your support tickets, active project status, and assigned delivery tasks are
-                  synced securely.
-                </p>
+                <strong data-support-sidebar-company>Workspace</strong>
+                <span data-support-sidebar-user>Signed in</span>
               </div>
-              <div class="support-actions">
-                <button class="btn outline" type="button" data-auth-logout>Sign out</button>
-              </div>
-              <div class="support-metrics" data-support-metrics>
-                <div><strong>-</strong><span>Open tickets</span></div>
-                <div><strong>-</strong><span>Active projects</span></div>
-                <div><strong>-</strong><span>Open tasks</span></div>
-                <div><strong>-</strong><span>Blocked items</span></div>
+
+              <nav class="support-app-nav" aria-label="Support workspace">
+                <button class="support-app-nav__item is-active" type="button" data-support-tab="dashboard">
+                  <span aria-hidden="true">⌂</span><span>Dashboard</span>
+                </button>
+                <button class="support-app-nav__item" type="button" data-support-tab="tasks">
+                  <span aria-hidden="true">✓</span><span>Tasks</span>
+                </button>
+                <button class="support-app-nav__item" type="button" data-support-tab="new-task">
+                  <span aria-hidden="true">＋</span><span>New Task</span>
+                </button>
+                <button class="support-app-nav__item" type="button" data-support-tab="projects">
+                  <span aria-hidden="true">▦</span><span>Projects</span>
+                </button>
+                <button class="support-app-nav__item" type="button" data-support-tab="account">
+                  <span aria-hidden="true">●</span><span>Account</span>
+                </button>
+              </nav>
+
+              <div class="support-app-sidebar__footer">
+                <span>ABiT Client Support</span>
               </div>
             </aside>
 
-            <div class="support-panel support-workspace">
+            <div class="support-panel support-workspace support-app-content">
               <p class="support-alert" data-support-alert aria-live="polite">
                 Loading your support workspace.
               </p>
 
-              <form class="support-ticket-form" data-support-ticket-form>
-                <div class="support-form-grid">
-                  <label>
-                    Ticket subject
-                    <input type="text" name="subject" placeholder="Briefly describe the issue" maxlength="120" required />
-                  </label>
-                  <label>
-                    Priority
-                    <select name="priority">
-                      <option value="1">Normal</option>
-                      <option value="2">High</option>
-                      <option value="3">Urgent</option>
-                      <option value="0">Low</option>
-                    </select>
-                  </label>
+              <section class="support-view is-active" data-support-view="dashboard">
+                <div class="support-view-heading">
+                  <div>
+                    <p class="eyebrow">Overview</p>
+                    <h3>Dashboard</h3>
+                  </div>
+                  <span>Live ERP workspace</span>
                 </div>
-                <label>
-                  Details
-                  <textarea name="message" rows="5" placeholder="Share the module, screen, expected result, and anything you already tried." required></textarea>
-                </label>
-                <label class="support-attachment-field">
-                  Attachments
-                  <span class="support-field-hint">Screenshots, PDF, Word, Excel or text files. Up to 5 files, 10 MB each.</span>
-                  <input type="file" name="attachments" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple />
-                </label>
-                <div class="support-selected-files" data-support-selected-files hidden></div>
-                <button class="btn primary" type="submit">Create Support Ticket</button>
-              </form>
 
-              <div class="support-columns">
+                <div class="support-metrics support-dashboard-metrics" data-support-metrics>
+                  <div><strong>-</strong><span>Open tickets</span></div>
+                  <div><strong>-</strong><span>Active projects</span></div>
+                  <div><strong>-</strong><span>Open tasks</span></div>
+                  <div><strong>-</strong><span>Blocked items</span></div>
+                </div>
+
                 <section class="support-list-block" aria-labelledby="support-tickets-title">
                   <div class="support-list-header">
-                    <h3 id="support-tickets-title">Tickets</h3>
+                    <h3 id="support-tickets-title">Open tickets</h3>
                     <span data-support-ticket-count>0</span>
                   </div>
                   <div class="support-list" data-support-tickets>
                     <p class="support-empty">No tickets loaded yet.</p>
                   </div>
                 </section>
+              </section>
 
-                <section class="support-list-block" aria-labelledby="support-projects-title">
-                  <div class="support-list-header">
-                    <h3 id="support-projects-title">Projects</h3>
-                    <span data-support-project-count>0</span>
+              <section class="support-view" data-support-view="tasks" hidden>
+                <div class="support-view-heading">
+                  <div>
+                    <p class="eyebrow">ERP linked</p>
+                    <h3>Tasks</h3>
                   </div>
-                  <div class="support-list" data-support-projects>
-                    <p class="support-empty">No project status loaded yet.</p>
-                  </div>
-                </section>
+                  <span data-support-task-count>0</span>
+                </div>
+                <div class="support-list support-task-list support-task-list--app" data-support-tasks>
+                  <p class="support-empty">No task updates loaded yet.</p>
+                </div>
+              </section>
 
-                <section class="support-list-block support-list-block--wide" aria-labelledby="support-tasks-title">
-                  <div class="support-list-header">
-                    <h3 id="support-tasks-title">Tasks</h3>
-                    <span data-support-task-count>0</span>
+              <section class="support-view" data-support-view="new-task" hidden>
+                <div class="support-view-heading">
+                  <div>
+                    <p class="eyebrow">Create</p>
+                    <h3>New Support Task</h3>
                   </div>
-                  <div class="support-list support-task-list" data-support-tasks>
-                    <p class="support-empty">No task updates loaded yet.</p>
+                  <span>Creates directly in ERPNext</span>
+                </div>
+
+                <form class="support-ticket-form support-ticket-form--app" data-support-ticket-form>
+                  <div class="support-form-grid">
+                    <label>
+                      Task subject
+                      <input type="text" name="subject" placeholder="Briefly describe the issue" maxlength="120" required />
+                    </label>
+                    <label>
+                      Priority
+                      <select name="priority">
+                        <option value="1">Normal</option>
+                        <option value="2">High</option>
+                        <option value="3">Urgent</option>
+                        <option value="0">Low</option>
+                      </select>
+                    </label>
                   </div>
-                </section>
-              </div>
+                  <label>
+                    Details
+                    <textarea name="message" rows="6" placeholder="Share the module, screen, expected result, and anything you already tried." required></textarea>
+                  </label>
+                  <label class="support-attachment-field">
+                    Attachments
+                    <span class="support-field-hint">Screenshots, PDF, Word, Excel or text files. Up to 5 files, 10 MB each.</span>
+                    <input type="file" name="attachments" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple />
+                  </label>
+                  <div class="support-selected-files" data-support-selected-files hidden></div>
+                  <button class="btn primary" type="submit">Create Support Task</button>
+                </form>
+              </section>
+
+              <section class="support-view" data-support-view="projects" hidden>
+                <div class="support-view-heading">
+                  <div>
+                    <p class="eyebrow">ERP linked</p>
+                    <h3>Projects</h3>
+                  </div>
+                  <span data-support-project-count>0</span>
+                </div>
+                <div class="support-list support-project-list--app" data-support-projects>
+                  <p class="support-empty">No project status loaded yet.</p>
+                </div>
+              </section>
+
+              <section class="support-view" data-support-view="account" hidden>
+                <div class="support-view-heading">
+                  <div>
+                    <p class="eyebrow">Account</p>
+                    <h3>Workspace access</h3>
+                  </div>
+                </div>
+                <div class="support-account-card">
+                  <div>
+                    <p class="eyebrow">Customer workspace</p>
+                    <h3 data-support-user>Loading workspace...</h3>
+                    <p data-support-copy>Your support workspace is synced securely.</p>
+                  </div>
+                  <button class="btn outline" type="button" data-auth-logout>Sign out</button>
+                </div>
+              </section>
             </div>
           </div>
         </div>
