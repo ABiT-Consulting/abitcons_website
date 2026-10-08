@@ -1897,3 +1897,58 @@ html.support-host .support-app-content {
   }
 }
 
+
+.support-task-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0 0 1rem;
+}
+.support-task-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.support-task-filters button:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.support-task-filters button.is-active {
+  border-color: color-mix(in oklab, var(--primary) 36%, var(--line));
+  background: color-mix(in oklab, var(--primary) 10%, var(--surface));
+  color: var(--primary);
+}
+.support-task-filters button span {
+  display: inline-flex;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background: var(--chip);
+  color: inherit;
+  font-size: .72rem;
+}
+@media (max-width: 640px) {
+  .support-task-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+  }
+  .support-task-filters button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+

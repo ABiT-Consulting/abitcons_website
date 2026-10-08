@@ -710,12 +710,16 @@ if (supportPortal) {
   const taskCount = supportPortal.querySelector("[data-support-task-count]");
   const supportTabButtons = Array.from(supportPortal.querySelectorAll("[data-support-tab]"));
   const supportViews = Array.from(supportPortal.querySelectorAll("[data-support-view]"));
+  const taskFilterButtons = Array.from(supportPortal.querySelectorAll("[data-task-status]"));
+  const taskFilterCounts = Array.from(supportPortal.querySelectorAll("[data-task-filter-count]"));
   const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
   const sidebarUser = supportPortal.querySelector("[data-support-sidebar-user]");
   const supportRefreshMs = 60_000;
   let supportRefreshTimer = null;
   let isSupportLoading = false;
   let queuedSupportRefresh = false;
+  let supportTasks = [];
+  let activeTaskStatus = "all";
 
   const sanitizePortalText = (value) =>
     String(value ?? "")
@@ -954,39 +958,65 @@ if (supportPortal) {
       .trim();
   };
 
-  const renderTasks = (tasks = []) => {
-    if (taskCount) taskCount.textContent = String(tasks.length);
+  const normalizeTaskStatus = (value = "") => {
+    const status = String(value || "").trim().toLowerCase();
+    if (["completed", "closed", "done"].includes(status)) return "completed";
+    if (["in progress", "working", "pending", "started"].includes(status)) return "in-progress";
+    if (["blocked", "on hold", "hold"].includes(status)) return "blocked";
+    if (["cancelled", "canceled"].includes(status)) return "cancelled";
+    return "open";
+  };
+
+  const updateTaskFilterCounts = () => {
+    const counts = { all: supportTasks.length, open: 0, "in-progress": 0, completed: 0, blocked: 0, cancelled: 0 };
+    supportTasks.forEach((task) => {
+      const key = normalizeTaskStatus(task.stage);
+      if (Object.prototype.hasOwnProperty.call(counts, key)) counts[key] += 1;
+    });
+    taskFilterCounts.forEach((node) => {
+      const key = node.dataset.taskFilterCount;
+      node.textContent = String(counts[key] ?? 0);
+    });
+  };
+
+  const renderTasks = (tasks = supportTasks) => {
+    supportTasks = Array.isArray(tasks) ? tasks : [];
+    updateTaskFilterCounts();
+    const visibleTasks = activeTaskStatus === "all" ? supportTasks : supportTasks.filter((task) => normalizeTaskStatus(task.stage) === activeTaskStatus);
+    if (taskCount) taskCount.textContent = String(visibleTasks.length);
     if (!tasksList) return;
-    if (!tasks.length) {
-      tasksList.innerHTML = '<p class="support-empty">No active tasks found for this account.</p>';
+    if (!visibleTasks.length) {
+      const label = activeTaskStatus === "all" ? "active" : activeTaskStatus.replace("-", " ");
+      tasksList.innerHTML = '<p class="support-empty">No ' + escapeText(label) + ' tasks found for this account.</p>';
       return;
     }
-
-    tasksList.innerHTML = tasks
-      .map((task) => {
-        const description = cleanRichText(task.description);
-        const stage = task.stage || "Open";
-        return `<article class="support-item support-task-card">
-          <div class="support-task-card__top">
-            <div>
-              <span class="support-task-card__eyebrow">${escapeText(task.project || "Support task")}</span>
-              <h4>${escapeText(cleanRichText(task.title) || task.title)}</h4>
-            </div>
-            <span class="support-task-status">${escapeText(stage)}</span>
-          </div>
-          ${itemMeta([
-            task.deadline ? ["Deadline", formatDate(task.deadline)] : null,
-            ["Remaining", `${Number(task.remainingHours || 0).toFixed(1)}h`],
-          ])}
-          ${description ? `<div class="support-task-description">${escapeText(description).replace(/\n/g, "<br>")}</div>` : ""}
-          <div class="support-task-card__footer">
-            ${task.completedBy ? `<span>Completed by <strong>${escapeText(task.completedBy)}</strong></span>` : "<span>ERP-linked task</span>"}
-            <span>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</span>
-          </div>
-        </article>`;
-      })
-      .join("");
+    tasksList.innerHTML = visibleTasks.map((task) => {
+      const description = cleanRichText(task.description);
+      const stage = task.stage || "Open";
+      return '<article class="support-item support-task-card">' +
+        '<div class="support-task-card__top"><div>' +
+        '<span class="support-task-card__eyebrow">' + escapeText(task.project || "Support task") + '</span>' +
+        '<h4>' + escapeText(cleanRichText(task.title) || task.title) + '</h4></div>' +
+        '<span class="support-task-status">' + escapeText(stage) + '</span></div>' +
+        itemMeta([task.deadline ? ["Deadline", formatDate(task.deadline)] : null, ["Remaining", Number(task.remainingHours || 0).toFixed(1) + "h"]]) +
+        (description ? '<div class="support-task-description">' + escapeText(description).replace(/\n/g, "<br>") + '</div>' : '') +
+        '<div class="support-task-card__footer">' +
+        (task.completedBy ? '<span>Completed by <strong>' + escapeText(task.completedBy) + '</strong></span>' : '<span>ERP-linked task</span>') +
+        '<span>Updated ' + escapeText(formatDate(task.updatedAt) || "recently") + '</span></div></article>';
+    }).join("");
   };
+
+  taskFilterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeTaskStatus = button.dataset.taskStatus || "all";
+      taskFilterButtons.forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      renderTasks(supportTasks);
+    });
+  });
 
   const renderSignedOut = () => {
     setSupportVisibility(false);
