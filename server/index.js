@@ -4,6 +4,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { createErpSupportService } from "./erp-support.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -44,6 +45,7 @@ const loadEnvironment = () => {
 
 loadEnvironment();
 
+const erpSupport = createErpSupportService({ rootDir });
 const port = Number(process.env.PORT || 3000);
 const publicDir = resolve(rootDir, "dist");
 const dbPath = resolve(rootDir, process.env.SQLITE_PATH || "data/abitcons.sqlite");
@@ -1140,6 +1142,18 @@ const handleSignin = async (request, response) => {
     return;
   }
 
+  if (erpSupport.enabled) {
+    try {
+      const user = await erpSupport.login(login, password);
+      sendJson(response, 200, { user });
+    } catch (error) {
+      sendJson(response, error.status || 401, {
+        error: error instanceof Error ? error.message : "Invalid ERP username or password.",
+      });
+    }
+    return;
+  }
+
   if (getOdooConfig()) {
     try {
       const user = await authenticateOdooCustomer(login, password);
@@ -1218,22 +1232,39 @@ const handleSocialAuth = async (request, response) => {
 };
 
 const handleSupportOverview = async (request, response) => {
-  const user = requireAuthenticatedUser(request, response);
-  if (!user) {
+  if (erpSupport.enabled) {
+    try {
+      sendJson(response, 200, await erpSupport.overview(request));
+    } catch (error) {
+      sendJson(response, error.status || 500, {
+        error: error instanceof Error ? error.message : "ERP support overview could not be loaded.",
+      });
+    }
     return;
   }
 
+  const user = requireAuthenticatedUser(request, response);
+  if (!user) return;
   const overview = await fetchSupportOverview(user);
   sendJson(response, 200, overview);
 };
 
 const handleSupportTicketCreate = async (request, response) => {
-  const user = requireAuthenticatedUser(request, response);
-  if (!user) {
+  const body = await readJsonBody(request);
+
+  if (erpSupport.enabled) {
+    try {
+      sendJson(response, 201, await erpSupport.createTask(request, body));
+    } catch (error) {
+      sendJson(response, error.status || 500, {
+        error: error instanceof Error ? error.message : "ERP support task could not be created.",
+      });
+    }
     return;
   }
 
-  const body = await readJsonBody(request);
+  const user = requireAuthenticatedUser(request, response);
+  if (!user) return;
   const ticket = await createSupportTicket(user, body);
   sendJson(response, 201, { ticket });
 };
@@ -1244,6 +1275,11 @@ const handleSupportForgotPassword = async (request, response) => {
 
   if (!login) {
     sendJson(response, 422, { error: "Enter your username or registered email first." });
+    return;
+  }
+
+  if (erpSupport.enabled) {
+    sendJson(response, 200, { message: erpSupport.recoveryMessage });
     return;
   }
 

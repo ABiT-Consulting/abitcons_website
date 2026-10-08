@@ -12,7 +12,7 @@ const isPlaceholderGoogleId =
 const googleClientId = isPlaceholderGoogleId ? "" : rawGoogleClientId;
 const gaMeasurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() || "";
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "";
-const apiBaseUrl = isDedicatedSupportHost ? "https://abitask.abit.ai" : configuredApiBaseUrl;
+const apiBaseUrl = configuredApiBaseUrl;
 const authStorageKey = "abit-auth-user";
 const phpApiFallbackRoutes = new Map([
   ["/api/health", "/api/health.php"],
