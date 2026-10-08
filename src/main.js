@@ -695,6 +695,7 @@ if (supportPortal) {
   const accessRequestFeedback = supportPortal.querySelector("[data-support-signup-feedback]");
   const ticketForm = supportPortal.querySelector("[data-support-ticket-form]");
   const selectedFilesBox = supportPortal.querySelector("[data-support-selected-files]");
+  const projectSelect = supportPortal.querySelector("[data-support-project-select]");
   const authStatus = supportPortal.querySelector("[data-auth-status]");
   const authFeedback = supportPortal.querySelector("[data-auth-feedback]");
   const logoutButton = supportPortal.querySelector("[data-auth-logout]");
@@ -913,6 +914,22 @@ if (supportPortal) {
       .join("");
   };
 
+  const renderProjectOptions = (projects = []) => {
+    if (!projectSelect) return;
+    const current = projectSelect.value;
+    projectSelect.innerHTML =
+      '<option value="">Select project</option>' +
+      projects
+        .map((project) => '<option value="' + escapeText(project.erpProjectId || project.id) + '">' + escapeText(project.title || project.erpProjectId || project.id) + '</option>')
+        .join("");
+    const validCurrent = projects.some((project) => String(project.erpProjectId || project.id) === current);
+    if (validCurrent) {
+      projectSelect.value = current;
+    } else if (projects.length === 1) {
+      projectSelect.value = String(projects[0].erpProjectId || projects[0].id || "");
+    }
+  };
+
   const renderProjects = (projects = []) => {
     if (projectCount) projectCount.textContent = String(projects.length);
     if (!projectsList) return;
@@ -1090,6 +1107,7 @@ if (supportPortal) {
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);
+      renderProjectOptions(overview.projects);
       renderTasks(overview.tasks);
       const updated = formatSyncTime(overview.summary?.lastUpdated);
       setAlert(`Workspace synced${updated ? ` ${updated}` : ""}.`);
@@ -1275,6 +1293,7 @@ if (supportPortal) {
     const payload = {
       subject: ticketForm.elements.subject?.value?.trim() || "",
       priority: ticketForm.elements.priority?.value || "1",
+      projectId: ticketForm.elements.projectId?.value || "",
       message: ticketForm.elements.message?.value?.trim() || "",
       attachments: await Promise.all(
         files.map(async (file) => ({
