@@ -108,6 +108,7 @@ export function createErpSupportService({ rootDir }) {
       erpUser: doc.name,
       login: trim(doc.username) || doc.name,
       fullName: trim(doc.full_name) || trim(doc.first_name) || trim(doc.username) || doc.name,
+      email: trim(doc.custom_support_email) || trim(doc.email) || doc.name,
       customer,
     };
   };
@@ -170,7 +171,7 @@ export function createErpSupportService({ rootDir }) {
       sessionToken: token,
       login: mapped.login,
       name: mapped.fullName,
-      email: mapped.erpUser,
+      email: mapped.email,
       company: { name: mapped.customer, code: mapped.customer },
       clientCode: mapped.customer,
       supportUrl: "#support-portal/" + encodeURIComponent(mapped.customer),
