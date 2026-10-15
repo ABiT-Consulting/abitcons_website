@@ -17,7 +17,7 @@ const company = {
   url: baseUrl,
   logo: `${baseUrl}/abitlogo.png`,
   email: "info@abitcons.com",
-  telephone: "+92 331 3133999",
+  telephone: "+971525202381",
   linkedIn: "https://www.linkedin.com/company/abitconsulting",
   facebook: "https://www.facebook.com/Abit.consultants",
 };
@@ -855,20 +855,26 @@ const jsonLd = (page) => {
           "@type": "QuantitativeValue",
           value: "11-50",
         },
-        address: {
+        address: [{
           "@type": "PostalAddress",
           streetAddress: "Head Office 116 Block F1",
           addressLocality: "Johar Town",
           addressRegion: "Lahore",
           postalCode: "54000",
           addressCountry: "PK",
-        },
+        }, {
+          "@type": "PostalAddress",
+          streetAddress: "Sharjah Media City",
+          addressLocality: "Sharjah",
+          addressRegion: "Sharjah",
+          addressCountry: "AE",
+        }],
         areaServed: ["Pakistan", "United Arab Emirates", "Saudi Arabia", "Worldwide"],
         contactPoint: [
           {
             "@type": "ContactPoint",
-            telephone: company.telephone,
             email: company.email,
+            telephone: company.telephone,
             contactType: "sales and support",
             areaServed: ["PK", "AE", "SA"],
             availableLanguage: ["en"],
@@ -1014,7 +1020,7 @@ const renderPage = (page) => `<!doctype html>
           </div>
           <div class="actions">
             <a class="button primary" href="/#contact">Talk to ABiT</a>
-            <a class="button secondary" href="https://wa.me/923313133999" target="_blank" rel="noreferrer">WhatsApp</a>
+            <a class="button secondary" href="mailto:info@abitcons.com">Email Us</a>
           </div>
         </div>
         <aside class="seo-proof" aria-label="ABiT service highlights">
@@ -1024,6 +1030,7 @@ const renderPage = (page) => `<!doctype html>
             <div><dt>Platforms</dt><dd>SAP B1, Odoo, ERPNext and more</dd></div>
             <div><dt>Regions</dt><dd>Pakistan, UAE, Saudi Arabia, worldwide</dd></div>
             <div><dt>Contact</dt><dd><a href="mailto:info@abitcons.com">info@abitcons.com</a></dd></div>
+            <div><dt>UAE phone</dt><dd><a href="tel:+971525202381">+971 52 520 2381</a></dd></div>
           </dl>
         </aside>
       </section>
@@ -1105,6 +1112,8 @@ ${relatedLinks(page.slug)}
       <div>
         <strong>ABiT Consulting</strong>
         <p>ERP consulting, custom software, integrations, cloud hosting and managed support.</p>
+        <p>Sharjah Media City, Sharjah, UAE</p>
+        <p><a href="tel:+971525202381">+971 52 520 2381</a></p>
       </div>
       <div>
         <a href="${company.linkedIn}" target="_blank" rel="me noreferrer">LinkedIn</a>

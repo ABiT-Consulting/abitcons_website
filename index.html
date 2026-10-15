@@ -52,38 +52,52 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/style.css" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": ["Organization", "ProfessionalService"],
-        "name": "ABiT Consulting",
-        "legalName": "ABIT Consulting (Pvt) Ltd.",
-        "url": "https://abitcons.com/",
-        "telephone": "+92 331 3133999",
-        "email": "info@abitcons.com",
-        "description": "ABiT Consulting is an ERP consulting and custom software company implementing any ERP — SAP Business One, Odoo, ERPNext, Microsoft Dynamics, NetSuite, Sage, Tally and custom-built systems — along with integrations, cloud hosting, and business applications for Pakistan, UAE, Saudi Arabia and worldwide teams.",
-        "logo": "https://abitcons.com/abitlogo.png",
-        "foundingDate": "2017",
-        "numberOfEmployees": {
-          "@type": "QuantitativeValue",
-          "value": "11-50"
-        },
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Head Office 116 Block F1",
-          "addressLocality": "Johar Town",
-          "addressRegion": "Lahore",
-          "postalCode": "54000",
-          "addressCountry": "Pakistan"
-        },
-        "areaServed": ["Pakistan", "United Arab Emirates", "Saudi Arabia", "Worldwide"],
-        "openingHours": "Mo-Fr 11:00-21:00",
-        "sameAs": [
-          "https://www.facebook.com/Abit.consultants",
-          "https://www.linkedin.com/company/abitconsulting"
-        ]
-      }
-    </script>
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": [
+    "Organization",
+    "ProfessionalService"
+  ],
+  "name": "ABiT Consulting",
+  "legalName": "ABIT Consulting (Pvt) Ltd.",
+  "url": "https://abitcons.com/",
+  "email": "info@abitcons.com", "telephone": "+971525202381",
+  "description": "ABiT Consulting is an ERP consulting and custom software company implementing any ERP — SAP Business One, Odoo, ERPNext, Microsoft Dynamics, NetSuite, Sage, Tally and custom-built systems — along with integrations, cloud hosting, and business applications for Pakistan, UAE, Saudi Arabia and worldwide teams.",
+  "logo": "https://abitcons.com/abitlogo.png",
+  "foundingDate": "2017",
+  "numberOfEmployees": {
+    "@type": "QuantitativeValue",
+    "value": "11-50"
+  },
+  "address": [
+    {
+      "@type": "PostalAddress",
+      "streetAddress": "Head Office 116 Block F1",
+      "addressLocality": "Johar Town",
+      "addressRegion": "Lahore",
+      "postalCode": "54000",
+      "addressCountry": "Pakistan"
+    },
+    {
+      "@type": "PostalAddress",
+      "streetAddress": "Sharjah Media City",
+      "addressLocality": "Sharjah",
+      "addressRegion": "Sharjah",
+      "addressCountry": "AE"
+    }
+  ],
+  "areaServed": [
+    "Pakistan",
+    "United Arab Emirates",
+    "Saudi Arabia",
+    "Worldwide"
+  ],
+  "openingHours": "Mo-Fr 11:00-21:00",
+  "sameAs": [
+    "https://www.facebook.com/Abit.consultants",
+    "https://www.linkedin.com/company/abitconsulting"
+  ]
+}</script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -105,38 +119,72 @@
         ]
       }
     </script>
-    <script type="application/ld+json">
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "serviceType": "ERP Consulting, Implementation, and Custom Software Development",
+  "provider": {
+    "@type": "Organization",
+    "name": "ABiT Consulting",
+    "url": "https://abitcons.com/",
+    "address": [
       {
-        "@context": "https://schema.org",
-        "@type": "Service",
-        "serviceType": "ERP Consulting, Implementation, and Custom Software Development",
-        "provider": {
-          "@type": "Organization",
-          "name": "ABiT Consulting",
-          "url": "https://abitcons.com/"
-        },
-        "areaServed": "Worldwide",
-        "audience": {
-          "@type": "BusinessAudience",
-          "audienceType": "SMBs and Mid-Market Companies"
-        },
-        "hasOfferCatalog": {
-          "@type": "OfferCatalog",
-          "name": "ERP Consulting and Development Services",
-          "itemListElement": [
-            { "@type": "Offer", "name": "SAP Business One Implementation and Customization" },
-            { "@type": "Offer", "name": "Odoo ERP Implementation and Custom Development" },
-            { "@type": "Offer", "name": "ERPNext Implementation and Support" },
-            { "@type": "Offer", "name": "ERP Integrations, Portals, and Reporting" },
-            { "@type": "Offer", "name": "Managed ERP Cloud Hosting and Support" },
-            { "@type": "Offer", "name": "Custom Web and Mobile Application Development" },
-            { "@type": "Offer", "name": "ZATCA E-Invoicing ERP Integration" },
-            { "@type": "Offer", "name": "FBR Digital Invoicing ERP Integration" },
-            { "@type": "Offer", "name": "AI Warehouse Management and ERP Integration" }
-          ]
-        }
+        "@type": "PostalAddress",
+        "streetAddress": "Sharjah Media City",
+        "addressLocality": "Sharjah",
+        "addressRegion": "Sharjah",
+        "addressCountry": "AE"
       }
-    </script>
+    ]
+  },
+  "areaServed": "Worldwide",
+  "audience": {
+    "@type": "BusinessAudience",
+    "audienceType": "SMBs and Mid-Market Companies"
+  },
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "ERP Consulting and Development Services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "name": "SAP Business One Implementation and Customization"
+      },
+      {
+        "@type": "Offer",
+        "name": "Odoo ERP Implementation and Custom Development"
+      },
+      {
+        "@type": "Offer",
+        "name": "ERPNext Implementation and Support"
+      },
+      {
+        "@type": "Offer",
+        "name": "ERP Integrations, Portals, and Reporting"
+      },
+      {
+        "@type": "Offer",
+        "name": "Managed ERP Cloud Hosting and Support"
+      },
+      {
+        "@type": "Offer",
+        "name": "Custom Web and Mobile Application Development"
+      },
+      {
+        "@type": "Offer",
+        "name": "ZATCA E-Invoicing ERP Integration"
+      },
+      {
+        "@type": "Offer",
+        "name": "FBR Digital Invoicing ERP Integration"
+      },
+      {
+        "@type": "Offer",
+        "name": "AI Warehouse Management and ERP Integration"
+      }
+    ]
+  }
+}</script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -1007,7 +1055,7 @@
             </div>
             <div class="cta-actions">
               <a class="btn primary" href="/schedule-meeting/">Schedule a Meeting</a>
-              <a class="btn outline" href="https://wa.me/923313133999" target="_blank" rel="noreferrer">WhatsApp Us</a>
+              <a class="btn outline" href="mailto:info@abitcons.com">Email Us</a>
             </div>
           </div>
         </div>
@@ -1232,12 +1280,14 @@
             <p class="eyebrow">Contact Us</p>
             <h2>Ready to transform your business?</h2>
             <p>
-              Head Office 116 Block F1, Johar Town, Lahore 54000, Pakistan. Reach out to start a
-              new project or scale your existing platforms.
+              <strong>Pakistan:</strong> Head Office 116 Block F1, Johar Town, Lahore 54000, Pakistan.<br />
+              <strong>UAE:</strong> Sharjah Media City, Sharjah, UAE.
+            </p>
+            <p>
+              Reach out to start a new project or scale your existing platforms.
             </p>
             <div class="contact-list">
-              <a href="tel:+923313133999">&#9742; +92 331 3133999</a>
-              <a href="https://wa.me/923313133999" target="_blank" rel="noreferrer">&#128172; WhatsApp: +92 331 313 3999</a>
+              <a href="tel:+971525202381">+971 52 520 2381</a>
               <a href="mailto:info@abitcons.com">&#9993; info@abitcons.com</a>
             </div>
             <div class="socials">
@@ -1388,7 +1438,9 @@
           <h4>Contact</h4>
           <ul>
             <li>Johar Town, Lahore</li>
-            <li><a href="tel:+923313133999">+92 331 3133999</a></li>
+            <li>Sharjah Media City, Sharjah, UAE</li>
+            <li><a href="tel:+971525202381">+971 52 520 2381</a></li>
+            <li><a href="mailto:info@abitcons.com">info@abitcons.com</a></li>
           </ul>
         </div>
         <div>
