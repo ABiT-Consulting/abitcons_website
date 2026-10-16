@@ -832,6 +832,23 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   gap: 0.85rem;
   align-items: center;
 }
+.client-region { margin-top: 2rem; }
+.client-region h3 { margin: 0 0 1rem; }
+.client-name-grid { margin: 0; padding: 0; list-style: none; }
+.client-name-grid li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
 .client-grid img {
   width: 100%; min-height: 88px; max-height: 92px;
   object-fit: contain; padding: 1rem;
