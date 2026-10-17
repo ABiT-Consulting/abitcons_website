@@ -189,7 +189,7 @@ const pages = [
     eyebrow: "Odoo ERP",
     h1: "Odoo ERP consultants for implementation, customization and support.",
     lead:
-      "ABiT helps businesses roll out Odoo with the right modules, custom workflows, ecommerce integrations, reports and long-term support.",
+      "ABiT is an Odoo partner. We help businesses roll out Odoo with the right modules, custom workflows, ecommerce integrations, reports and long-term support.",
     tags: ["Odoo ERP", "Customization", "Ecommerce", "Reports", "Support"],
     serviceType: "Odoo ERP consulting",
     sectionTitle: "Odoo services for growing teams",
@@ -236,7 +236,7 @@ const pages = [
     eyebrow: "Odoo Dubai",
     h1: "Odoo implementation and customization for Dubai and UAE teams.",
     lead:
-      "ABiT configures, extends and supports Odoo for UAE companies that need practical ERP workflows across sales, finance, inventory, ecommerce and operations.",
+      "ABiT is an Odoo partner. We configure, extend and support Odoo for UAE companies that need practical ERP workflows across sales, finance, inventory, ecommerce and operations.",
     tags: ["Dubai", "UAE", "Odoo ERP", "Migration", "Ecommerce"],
     serviceType: "Odoo implementation in Dubai and UAE",
     sectionTitle: "Odoo delivery scope for UAE businesses",
