@@ -762,6 +762,20 @@ if (supportPortal) {
     }).format(date);
   };
 
+  const formatActivityTime = (value) => {
+    if (!value) return "";
+    const normalized = String(value).includes("T") ? value : String(value).replace(" ", "T");
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   const setAlert = (message, isError = false) => {
     if (!alertBox) {
       return;
@@ -963,7 +977,7 @@ if (supportPortal) {
     const doc = parser.parseFromString(source, "text/html");
     doc.querySelectorAll("br").forEach((node) => node.replaceWith("\n"));
     doc.querySelectorAll("p, div, li, hr").forEach((node) => {
-      if (node.tagName === "LI") node.prepend("â€¢ ");
+      if (node.tagName === "LI") node.prepend("Ã¢â‚¬Â¢ ");
       node.append("\n");
     });
     return (doc.body.textContent || "")
@@ -996,6 +1010,67 @@ if (supportPortal) {
     });
   };
 
+  const renderTaskThread = (container, data) => {
+    if (!container) return;
+    const task = data?.task || {};
+    const activity = Array.isArray(data?.activity) ? data.activity : [];
+    const expectedDue = task.expectedDueDate ? formatDate(task.expectedDueDate) : "Not set";
+
+    const items = activity.length
+      ? activity
+          .map((item) => {
+            const body = cleanRichText(item.content || "");
+            const isEmail = item.type === "email" || item.type === "email-log";
+            const label = isEmail
+              ? ("Email" + (item.direction ? " Â· " + item.direction : ""))
+              : (item.activityType || "Activity");
+            return '<article class="support-thread-item ' + (isEmail ? "is-email" : "is-activity") + '">' +
+              '<div class="support-thread-item__meta">' +
+                '<span class="support-thread-kind">' + escapeText(label) + '</span>' +
+                '<span>' + escapeText(item.author || "ABiT Team") + '</span>' +
+                '<time>' + escapeText(formatActivityTime(item.date)) + '</time>' +
+              '</div>' +
+              (item.subject ? '<h5>' + escapeText(item.subject) + '</h5>' : '') +
+              (body ? '<div class="support-thread-item__body">' + escapeText(body).replace(/\n/g, "<br>") + '</div>' : '') +
+            '</article>';
+          })
+          .join("")
+      : '<p class="support-empty">No activity has been recorded on this task yet.</p>';
+
+    container.innerHTML =
+      '<div class="support-thread-head">' +
+        '<div><strong>Conversation &amp; activity</strong><span>Expected due: ' + escapeText(expectedDue) + '</span></div>' +
+        '<span class="support-thread-status">' + escapeText(task.status || "") + '</span>' +
+      '</div>' +
+      '<div class="support-thread-list">' + items + '</div>' +
+      '<form class="support-thread-reply" data-task-reply-form data-task-id="' + escapeText(task.id || "") + '">' +
+        '<label>Reply to this task<textarea name="message" rows="3" maxlength="8000" placeholder="Write your update or reply. It will be saved in ERP activity." required></textarea></label>' +
+        '<div class="support-thread-reply__actions">' +
+          '<span data-task-reply-feedback></span>' +
+          '<button class="btn primary" type="submit">Send reply</button>' +
+        '</div>' +
+      '</form>';
+  };
+
+  const loadTaskThread = async (taskId, container, { force = false } = {}) => {
+    if (!container || !taskId) return;
+    if (container.dataset.loaded === "true" && !force) return;
+    container.innerHTML = '<p class="support-empty">Loading conversation...</p>';
+    try {
+      const data = await apiJsonRequest(
+        "/api/support/tasks/" + encodeURIComponent(taskId) + "/activity",
+        { auth: true }
+      );
+      renderTaskThread(container, data);
+      container.dataset.loaded = "true";
+    } catch (error) {
+      container.innerHTML =
+        '<p class="support-empty support-thread-error">' +
+        escapeText(error instanceof Error ? error.message : "Conversation could not be loaded.") +
+        '</p>';
+    }
+  };
+
   const renderTasks = (tasks = supportTasks) => {
     supportTasks = Array.isArray(tasks) ? tasks : [];
     updateTaskFilterCounts();
@@ -1010,18 +1085,75 @@ if (supportPortal) {
     tasksList.innerHTML = visibleTasks.map((task) => {
       const description = cleanRichText(task.description);
       const stage = task.stage || "Open";
-      return '<article class="support-item support-task-card">' +
+      const taskId = task.erpTaskId || task.id;
+      const dueText = task.deadline ? formatDate(task.deadline) : "Not set";
+      return '<article class="support-item support-task-card" data-task-card="' + escapeText(taskId) + '">' +
         '<div class="support-task-card__top"><div>' +
         '<span class="support-task-card__eyebrow">' + escapeText(task.project || "Support task") + '</span>' +
         '<h4>' + escapeText(cleanRichText(task.title) || task.title) + '</h4></div>' +
         '<span class="support-task-status">' + escapeText(stage) + '</span></div>' +
-        itemMeta([task.deadline ? ["Deadline", formatDate(task.deadline)] : null, ["Remaining", Number(task.remainingHours || 0).toFixed(1) + "h"]]) +
+        itemMeta([["Expected due", dueText], ["ERP Task", taskId]]) +
         (description ? '<div class="support-task-description">' + escapeText(description).replace(/\n/g, "<br>") + '</div>' : '') +
         '<div class="support-task-card__footer">' +
         (task.completedBy ? '<span>Completed by <strong>' + escapeText(task.completedBy) + '</strong></span>' : '<span>ERP-linked task</span>') +
-        '<span>Updated ' + escapeText(formatDate(task.updatedAt) || "recently") + '</span></div></article>';
+        '<span>Updated ' + escapeText(formatDate(task.updatedAt) || "recently") + '</span></div>' +
+        '<div class="support-task-card__actions">' +
+          '<button class="support-thread-toggle" type="button" data-task-thread-toggle="' + escapeText(taskId) + '" aria-expanded="false">Conversation &amp; activity</button>' +
+        '</div>' +
+        '<section class="support-task-thread" data-task-thread="' + escapeText(taskId) + '" hidden></section>' +
+      '</article>';
     }).join("");
   };
+
+  tasksList?.addEventListener("click", async (event) => {
+    const toggle = event.target.closest("[data-task-thread-toggle]");
+    if (!toggle) return;
+    const taskId = toggle.dataset.taskThreadToggle;
+    const card = toggle.closest("[data-task-card]");
+    const thread = card?.querySelector("[data-task-thread]");
+    if (!thread) return;
+    const opening = thread.hidden;
+    thread.hidden = !opening;
+    toggle.setAttribute("aria-expanded", opening ? "true" : "false");
+    toggle.textContent = opening ? "Hide conversation" : "Conversation & activity";
+    if (opening) {
+      await loadTaskThread(taskId, thread);
+    }
+  });
+
+  tasksList?.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-task-reply-form]");
+    if (!form) return;
+    event.preventDefault();
+    const taskId = form.dataset.taskId;
+    const textarea = form.elements.message;
+    const feedback = form.querySelector("[data-task-reply-feedback]");
+    const submitButton = form.querySelector('button[type="submit"]');
+    const message = textarea?.value?.trim() || "";
+    if (!message) return;
+
+    try {
+      if (submitButton) submitButton.disabled = true;
+      if (feedback) feedback.textContent = "Sending...";
+      await apiJsonRequest(
+        "/api/support/tasks/" + encodeURIComponent(taskId) + "/reply",
+        { method: "POST", payload: { message }, auth: true }
+      );
+      if (textarea) textarea.value = "";
+      if (feedback) feedback.textContent = "Reply saved to ERP activity.";
+      const thread = form.closest("[data-task-thread]");
+      if (thread) {
+        thread.dataset.loaded = "false";
+        await loadTaskThread(taskId, thread, { force: true });
+      }
+    } catch (error) {
+      if (feedback) {
+        feedback.textContent = error instanceof Error ? error.message : "Reply could not be saved.";
+      }
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
 
   taskFilterButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -1259,7 +1391,7 @@ if (supportPortal) {
     if (!selectedFilesBox) return;
     selectedFilesBox.hidden = files.length === 0;
     selectedFilesBox.innerHTML = files
-      .map((file) => `<span>ðŸ“Ž ${escapeText(file.name)} <small>${(file.size / 1024 / 1024).toFixed(1)} MB</small></span>`)
+      .map((file) => `<span>Ã°Å¸â€œÅ½ ${escapeText(file.name)} <small>${(file.size / 1024 / 1024).toFixed(1)} MB</small></span>`)
       .join("");
   });
 
@@ -1801,4 +1933,3 @@ if (contactForm) {
     }
   );
 }
-

@@ -221,6 +221,178 @@ export function createErpSupportService({ rootDir }) {
     });
   };
 
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const getAccessibleTask = async (session, taskId) => {
+    const requestedTask = trim(taskId);
+    if (!requestedTask) {
+      const error = new Error("Task ID is required.");
+      error.status = 422;
+      throw error;
+    }
+
+    let task;
+    try {
+      task = (await erpRequest("GET", "/api/resource/Task/" + encodeURIComponent(requestedTask))).data;
+    } catch (error) {
+      const safeError = new Error("Support task was not found.");
+      safeError.status = error?.status === 404 ? 404 : 403;
+      throw safeError;
+    }
+
+    const projects = await getProjects(session.customer);
+    const allowedProjects = new Set(projects.map((project) => project.name));
+    if (!task?.project || !allowedProjects.has(task.project)) {
+      const error = new Error("You do not have access to this support task.");
+      error.status = 403;
+      throw error;
+    }
+
+    return task;
+  };
+
+  const getTaskActivity = async (request, taskId) => {
+    const session = await requireSession(request);
+    const task = await getAccessibleTask(session, taskId);
+
+    const [comments, communications] = await Promise.all([
+      erpList("Comment", {
+        fields: [
+          "name",
+          "comment_type",
+          "content",
+          "comment_email",
+          "comment_by",
+          "owner",
+          "creation",
+          "modified",
+          "reference_doctype",
+          "reference_name",
+        ],
+        filters: [
+          ["reference_doctype", "=", "Task"],
+          ["reference_name", "=", task.name],
+        ],
+        orderBy: "creation asc",
+        limit: 500,
+      }),
+      erpList("Communication", {
+        fields: [
+          "name",
+          "communication_type",
+          "communication_medium",
+          "sent_or_received",
+          "subject",
+          "content",
+          "sender",
+          "recipients",
+          "cc",
+          "communication_date",
+          "creation",
+          "owner",
+          "reference_doctype",
+          "reference_name",
+        ],
+        filters: [
+          ["reference_doctype", "=", "Task"],
+          ["reference_name", "=", task.name],
+        ],
+        orderBy: "communication_date asc",
+        limit: 500,
+      }),
+    ]);
+
+    const activity = [
+      ...comments.map((comment) => {
+        const content = comment.content || "";
+        const looksLikeEmailUpdate = /\bemail\b|gmail|sent direct follow-up|email chase/i.test(content);
+        return {
+          id: comment.name,
+          type: looksLikeEmailUpdate ? "email-log" : "activity",
+          activityType: looksLikeEmailUpdate ? "Email update" : (comment.comment_type || "Comment"),
+          direction: "",
+          subject: "",
+          content,
+          author: comment.comment_by || comment.comment_email || comment.owner || "ABiT Team",
+          sender: comment.comment_email || comment.owner || "",
+          recipients: "",
+          date: comment.creation || comment.modified,
+        };
+      }),
+      ...communications.map((communication) => ({
+        id: communication.name,
+        type: "email",
+        activityType: communication.communication_medium || communication.communication_type || "Email",
+        direction: communication.sent_or_received || "",
+        subject: communication.subject || "",
+        content: communication.content || "",
+        author: communication.sender || communication.owner || "ABiT Team",
+        sender: communication.sender || "",
+        recipients: communication.recipients || "",
+        cc: communication.cc || "",
+        date: communication.communication_date || communication.creation,
+      })),
+    ]
+      .filter((item) => item.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    return {
+      task: {
+        id: task.name,
+        title: task.subject || task.name,
+        project: task.project || "",
+        status: task.status || "Open",
+        expectedDueDate: task.exp_end_date || null,
+        updatedAt: task.modified || null,
+      },
+      activity,
+    };
+  };
+
+  const addTaskReply = async (request, taskId, body) => {
+    const session = await requireSession(request);
+    const task = await getAccessibleTask(session, taskId);
+    const message = trim(body?.message ?? body?.content).slice(0, 8000);
+
+    if (!message) {
+      const error = new Error("Reply message is required.");
+      error.status = 422;
+      throw error;
+    }
+
+    const safeContent = "<p>" + escapeHtml(message).replace(/\n/g, "<br>") + "</p>";
+    const comment = (await erpRequest("POST", "/api/resource/Comment", {
+      comment_type: "Comment",
+      reference_doctype: "Task",
+      reference_name: task.name,
+      content: safeContent,
+      comment_email: session.erpUser || session.erp_user,
+      comment_by: session.fullName || session.full_name || session.login,
+    })).data;
+
+    return {
+      success: true,
+      reply: {
+        id: comment.name,
+        type: "activity",
+        activityType: "Comment",
+        direction: "",
+        subject: "",
+        content: comment.content || safeContent,
+        author: session.fullName || session.full_name || session.login,
+        sender: session.email || session.erpUser || session.erp_user,
+        recipients: "",
+        date: comment.creation || new Date().toISOString(),
+      },
+    };
+  };
+
   const overview = async (request) => {
     const session = await requireSession(request);
     const projects = await getProjects(session.customer);
@@ -371,6 +543,8 @@ export function createErpSupportService({ rootDir }) {
     login,
     overview,
     createTask,
+    getTaskActivity,
+    addTaskReply,
     requireSession,
     recoveryMessage: "Please contact your ABiT account manager to reset your ERP support password.",
   };

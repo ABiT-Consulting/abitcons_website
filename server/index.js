@@ -1269,6 +1269,27 @@ const handleSupportTicketCreate = async (request, response) => {
   sendJson(response, 201, { ticket });
 };
 
+const handleSupportTaskActivity = async (request, response, taskId) => {
+  try {
+    sendJson(response, 200, await erpSupport.getTaskActivity(request, taskId));
+  } catch (error) {
+    sendJson(response, error.status || 500, {
+      error: error instanceof Error ? error.message : "Task activity could not be loaded.",
+    });
+  }
+};
+
+const handleSupportTaskReply = async (request, response, taskId) => {
+  const body = await readJsonBody(request);
+  try {
+    sendJson(response, 201, await erpSupport.addTaskReply(request, taskId, body));
+  } catch (error) {
+    sendJson(response, error.status || 500, {
+      error: error instanceof Error ? error.message : "Task reply could not be saved.",
+    });
+  }
+};
+
 const handleSupportForgotPassword = async (request, response) => {
   const body = await readJsonBody(request);
   const login = trim(body?.login ?? body?.username ?? body?.email);
@@ -1363,6 +1384,18 @@ const server = createServer(async (request, response) => {
 
     if (requestUrl.pathname === "/api/support/overview" && request.method === "GET") {
       await handleSupportOverview(request, response);
+      return;
+    }
+
+    const taskActivityMatch = requestUrl.pathname.match(/^\/api\/support\/tasks\/([^/]+)\/activity$/);
+    if (taskActivityMatch && request.method === "GET") {
+      await handleSupportTaskActivity(request, response, decodeURIComponent(taskActivityMatch[1]));
+      return;
+    }
+
+    const taskReplyMatch = requestUrl.pathname.match(/^\/api\/support\/tasks\/([^/]+)\/reply$/);
+    if (taskReplyMatch && request.method === "POST") {
+      await handleSupportTaskReply(request, response, decodeURIComponent(taskReplyMatch[1]));
       return;
     }
 
