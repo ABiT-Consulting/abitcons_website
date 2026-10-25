@@ -1543,34 +1543,35 @@ if (supportPortal) {
     }
   });
 
-  forgotPasswordButton?.addEventListener("click", async () => {
+forgotPasswordButton?.addEventListener("click", async () => {
     const login = loginForm?.elements.login?.value?.trim() || "";
-
-    if (!login) {
-      setAuthFeedback("Enter your username or registered email first.", true);
-      loginForm?.elements.login?.focus();
-      return;
-    }
-
     try {
       forgotPasswordButton.disabled = true;
       setAuthFeedback("");
-      setAuthStatus("Sending recovery instructions...");
-      const { message } = await apiJsonRequest("/api/support/forgot-password", {
+      setAuthStatus("Opening password recovery options...");
+      const { message, recoveryUrl } = await apiJsonRequest("/api/support/forgot-password", {
         method: "POST",
         payload: { login },
       });
       setAuthStatus("Not signed in.");
-      setAuthFeedback(
-        message ||
-          "If this account is registered, recovery instructions were sent to the registered contact."
-      );
+      setAuthFeedback(message || "Follow the password recovery instructions for your account.");
+      // ERPNext manages password reset tokens. Do not collect or reset passwords here.
+      if (recoveryUrl && authFeedback) {
+        const target = new URL(recoveryUrl, window.location.href);
+        if (target.protocol === "https:") {
+          const link = document.createElement("a");
+          link.className = "support-password-recovery-link";
+          link.href = target.href;
+          link.textContent = "Open ERPNext password reset";
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          authFeedback.append(document.createTextNode(" "), link);
+        }
+      }
     } catch (error) {
       setAuthStatus("Not signed in.", true);
       setAuthFeedback(
-        error instanceof Error
-          ? error.message
-          : "Recovery instructions could not be sent. Please contact ABiT support.",
+        error instanceof Error ? error.message : "Password recovery options could not be loaded.",
         true
       );
     } finally {

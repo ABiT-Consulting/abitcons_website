@@ -144,8 +144,15 @@ export function createErpSupportService({ rootDir }) {
     });
 
     if (!response.ok) {
-      const error = new Error("Invalid ERP username or password.");
-      error.status = 401;
+      // Keep authentication exclusively in ERPNext. Never allow a Support Admin
+      // checkbox, display name or alias to bypass password verification.
+      const invalidCredentials = response.status === 401 || response.status === 403;
+      const error = new Error(invalidCredentials
+        ? "ERPNext rejected these login credentials. Use your ERPNext username/email and account password. The Support Admin checkbox does not set a password. Select Forgot password to reset it."
+        : response.status === 429
+          ? "ERPNext has temporarily limited sign-in attempts. Please try again later."
+          : "ERPNext sign-in is temporarily unavailable. Please try again later.");
+      error.status = invalidCredentials ? 401 : response.status === 429 ? 429 : 502;
       throw error;
     }
 
@@ -690,6 +697,8 @@ export function createErpSupportService({ rootDir }) {
     addTaskReply,
     notifyTaskAssignees,
     requireSession,
-    recoveryMessage: "Please contact your ABiT account manager to reset your ERP support password.",
+    // Official ERPNext reset page manages email links and password security.
+    recoveryUrl: baseUrl + "/login#forgot",
+    recoveryMessage: "Reset your ERPNext password on the official ERPNext page. Use the email address on your ERPNext User record, then return here to sign in.",
   };
 }

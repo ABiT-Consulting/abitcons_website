@@ -466,3 +466,35 @@ html.support-host .support-app-content .support-thread-toggle:hover {
 html.support-host[data-support-theme="dark"] .support-app-sidebar .sp-help-button:hover {
   background: #59293e !important;
 }
+
+/* Authentication recovery follows the configured ERPNext login page.
+   The portal does not collect new passwords or expose account existence. */
+html.support-host .support-erp-login-hint{
+  margin:0;
+  font-size:.76rem;
+  color:var(--sp-muted);
+  line-height:1.55;
+}
+html.support-host .support-login-panel .auth-feedback{
+  overflow-wrap:anywhere;
+  line-height:1.65;
+}
+html.support-host .support-login-panel .support-password-recovery-link{
+  display:inline-flex;
+  align-items:center;
+  margin-top:7px;
+  padding:7px 11px;
+  border:1px solid var(--sp-accent);
+  background:var(--sp-wash);
+  border-radius:8px;
+  font-weight:750;
+  font-size:.8rem;
+  color:var(--sp-accent) !important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+html.support-host .support-login-panel .support-password-recovery-link:hover,
+html.support-host .support-login-panel .support-password-recovery-link:focus-visible{
+  outline:2px solid var(--sp-accent);
+  outline-offset:2px;
+}

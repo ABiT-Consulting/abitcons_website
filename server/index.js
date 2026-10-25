@@ -1147,7 +1147,7 @@ const handleSignin = async (request, response) => {
       const user = await erpSupport.login(login, password);
       sendJson(response, 200, { user });
     } catch (error) {
-      sendJson(response, error.status || 401, {
+      sendJson(response, error.status || 502, {
         error: error instanceof Error ? error.message : "Invalid ERP username or password.",
       });
     }
@@ -1294,13 +1294,16 @@ const handleSupportForgotPassword = async (request, response) => {
   const body = await readJsonBody(request);
   const login = trim(body?.login ?? body?.username ?? body?.email);
 
-  if (!login) {
-    sendJson(response, 422, { error: "Enter your username or registered email first." });
+  if (erpSupport.enabled) {
+    sendJson(response, 200, {
+      message: erpSupport.recoveryMessage,
+      recoveryUrl: erpSupport.recoveryUrl,
+    });
     return;
   }
 
-  if (erpSupport.enabled) {
-    sendJson(response, 200, { message: erpSupport.recoveryMessage });
+  if (!login) {
+    sendJson(response, 422, { error: "Enter your username or registered email first." });
     return;
   }
 
