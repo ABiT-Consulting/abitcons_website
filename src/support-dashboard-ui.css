@@ -347,3 +347,122 @@ html.support-host .sp-panel-head h2{font-size:1.07rem}
 html.support-host .support-premium-toolbar__title strong{font-weight:850}
 html.support-host[data-support-theme="dark"] .site-header .logo img{filter:brightness(1.65) saturate(1.28) drop-shadow(0 2px 8px #2a6bf533)}
 html.support-host[data-support-theme="light"] .site-header .logo img{filter:none}
+
+/* Contrast-safe task statuses and actions for both portal roles.
+   These rules intentionally override legacy generic task-card span colors. */
+html.support-host {
+  --sp-state-completed-bg: #e0f4e9;
+  --sp-state-completed-fg: #08643d;
+  --sp-state-completed-border: #bce8ce;
+  --sp-state-open-bg: #fde7ec;
+  --sp-state-open-fg: #9e2335;
+  --sp-state-open-border: #f3bfca;
+  --sp-state-working-bg: #e6efff;
+  --sp-state-working-fg: #204f9e;
+  --sp-state-working-border: #c2d9fc;
+  --sp-state-blocked-bg: #fff1d3;
+  --sp-state-blocked-fg: #855207;
+  --sp-state-blocked-border: #edd9a8;
+  --sp-state-cancelled-bg: #eaf0f7;
+  --sp-state-cancelled-fg: #40536d;
+  --sp-state-cancelled-border: #d3ddea;
+}
+html.support-host[data-support-theme="dark"] {
+  --sp-state-completed-bg: #174431;
+  --sp-state-completed-fg: #bdffdd;
+  --sp-state-completed-border: #346b51;
+  --sp-state-open-bg: #522331;
+  --sp-state-open-fg: #ffd4dc;
+  --sp-state-open-border: #864051;
+  --sp-state-working-bg: #1a3b66;
+  --sp-state-working-fg: #d4e7ff;
+  --sp-state-working-border: #355d92;
+  --sp-state-blocked-bg: #493719;
+  --sp-state-blocked-fg: #ffe3ad;
+  --sp-state-blocked-border: #78602e;
+  --sp-state-cancelled-bg: #29374a;
+  --sp-state-cancelled-fg: #e1ebfa;
+  --sp-state-cancelled-border: #45576e;
+}
+html.support-host .support-task-card .support-task-status,
+html.support-host .support-app-content .sp-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+html.support-host .support-task-card .support-task-status--completed,
+html.support-host .support-app-content .sp-status--completed {
+  background: var(--sp-state-completed-bg) !important;
+  border: 1px solid var(--sp-state-completed-border) !important;
+  color: var(--sp-state-completed-fg) !important;
+}
+html.support-host .support-task-card .support-task-status--open,
+html.support-host .support-app-content .sp-status--open {
+  background: var(--sp-state-open-bg) !important;
+  border: 1px solid var(--sp-state-open-border) !important;
+  color: var(--sp-state-open-fg) !important;
+}
+html.support-host .support-task-card .support-task-status--in-progress,
+html.support-host .support-app-content .sp-status--working {
+  background: var(--sp-state-working-bg) !important;
+  border: 1px solid var(--sp-state-working-border) !important;
+  color: var(--sp-state-working-fg) !important;
+}
+html.support-host .support-task-card .support-task-status--blocked,
+html.support-host .support-app-content .sp-status--blocked {
+  background: var(--sp-state-blocked-bg) !important;
+  border: 1px solid var(--sp-state-blocked-border) !important;
+  color: var(--sp-state-blocked-fg) !important;
+}
+html.support-host .support-task-card .support-task-status--cancelled,
+html.support-host .support-app-content .sp-status--cancelled {
+  background: var(--sp-state-cancelled-bg) !important;
+  border: 1px solid var(--sp-state-cancelled-border) !important;
+  color: var(--sp-state-cancelled-fg) !important;
+}
+/* Some custom ERP statuses map to "open"; use the same readable palette. */
+html.support-host .support-task-card .support-task-status:not([class*="support-task-status--"]),
+html.support-host .support-app-content .sp-status:not([class*="sp-status--"]) {
+  background: var(--sp-state-open-bg) !important;
+  border: 1px solid var(--sp-state-open-border) !important;
+  color: var(--sp-state-open-fg) !important;
+}
+/* Small badges and interactive text must remain legible on dark surfaces. */
+html.support-host .support-task-card .support-pill,
+html.support-host .support-app-content .support-thread-status {
+  background: var(--sp-wash) !important;
+  border: 1px solid var(--sp-line) !important;
+  color: var(--sp-ink) !important;
+  text-shadow: none !important;
+}
+html.support-host .support-app-content .support-task-filters button.is-active {
+  color: var(--sp-ink) !important;
+  background: var(--sp-wash) !important;
+  border-color: var(--sp-accent) !important;
+}
+html.support-host .support-app-content .support-task-filters button.is-active span {
+  color: var(--sp-ink) !important;
+}
+html.support-host .support-app-sidebar .sp-help-button,
+html.support-host .support-app-content .sp-row-action,
+html.support-host .support-app-content .support-thread-toggle {
+  color: var(--sp-ink) !important;
+  background: var(--sp-wash) !important;
+  border: 1px solid var(--sp-line) !important;
+  text-shadow: none !important;
+}
+html.support-host[data-support-theme="dark"] .support-app-sidebar .sp-help-button {
+  color: #ffd7df !important;
+  background: #432135 !important;
+  border-color: #824254 !important;
+}
+html.support-host .support-app-sidebar .sp-help-button:hover,
+html.support-host .support-app-content .sp-row-action:hover,
+html.support-host .support-app-content .support-thread-toggle:hover {
+  border-color: var(--sp-accent) !important;
+}
+html.support-host[data-support-theme="dark"] .support-app-sidebar .sp-help-button:hover {
+  background: #59293e !important;
+}

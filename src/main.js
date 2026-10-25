@@ -1137,7 +1137,7 @@ if (supportPortal) {
         '<div class="support-task-card__top"><div>' +
         '<span class="support-task-card__eyebrow">' + escapeText(task.company ? task.company + " · " + (task.project || "") : (task.project || "Support task")) + '</span>' +
         '<h4>' + escapeText(cleanRichText(task.title) || task.title) + '</h4></div>' +
-        '<span class="support-task-status">' + escapeText(stage) + '</span></div>' +
+        '<span class="support-task-status support-task-status--' + normalizeTaskStatus(stage) + '">' + escapeText(stage) + '</span></div>' +
         itemMeta([["Expected due", dueText], ["ERP Task", taskId], ["Assigned to", task.assignedTo || "Unassigned"], ["Priority", task.priority || "Medium"]]) +
         (description ? '<div class="support-task-description">' + escapeText(description).replace(/\n/g, "<br>") + '</div>' : '') +
         '<div class="support-task-card__footer">' +
