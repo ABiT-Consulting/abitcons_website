@@ -1,3 +1,4 @@
+import { renderSupportAdminDashboard, renderSupportClientDashboard, renderSupportSidebar, icon } from "./support-dashboard-ui.js";
 const supportPortalHosts = new Set(["support.abitcons.com", "support.abit.ai"]);
 const isDedicatedSupportHost = supportPortalHosts.has(window.location.hostname.toLowerCase());
 if (isDedicatedSupportHost) {
@@ -695,7 +696,8 @@ if (supportPortal) {
     document.documentElement.dataset.supportTheme = theme;
     return theme;
   };
-  applySupportTheme(savedTheme);  const signedOutShell = supportPortal.querySelector("[data-support-signed-out]");
+  applySupportTheme(savedTheme);
+  const signedOutShell = supportPortal.querySelector("[data-support-signed-out]");
   const signedInShell = supportPortal.querySelector("[data-support-signed-in]");
   const loginForm = supportPortal.querySelector("[data-support-login-form]");
   const forgotPasswordButton = supportPortal.querySelector("[data-support-forgot-password]");
@@ -723,10 +725,14 @@ if (supportPortal) {
   const taskFilterCounts = Array.from(supportPortal.querySelectorAll("[data-task-filter-count]"));
   const topToolbar = document.createElement("div");
   topToolbar.className = "support-premium-toolbar";
-  topToolbar.innerHTML = '<div class="support-premium-toolbar__title"><strong>ABiT Support Portal</strong>' +
-    '<span>Projects, task updates and customer support</span></div>' +
-    '<label class="support-premium-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search support tasks..." aria-label="Search tasks" data-premium-search></label>' +
-    '<button type="button" class="support-theme-toggle" data-theme-toggle aria-label="Toggle light or dark theme">◐ <span>Theme</span></button>';
+  topToolbar.innerHTML =
+    '<div class="support-premium-toolbar__title"><strong>ABiT Support Portal</strong>' +
+    '<span>Live ERPNext projects and support operations</span></div>' +
+    '<div class="sp-toolbar-actions"><label class="support-premium-search">' + icon("search") +
+    '<input type="search" placeholder="Search tasks or companies..." aria-label="Search tasks" data-premium-search></label>' +
+    '<button type="button" class="support-theme-toggle" data-theme-toggle aria-label="Switch light and dark appearance">' +
+    icon("moon") + '<span>Appearance</span></button>' +
+    '<div class="sp-top-profile"><span class="sp-top-avatar">AB</span><span class="sp-top-name">Signed in</span></div></div>';
   supportPortal.querySelector(".support-app-content")?.prepend(topToolbar);
   topToolbar.querySelector("[data-theme-toggle]")?.addEventListener("click", () => {
     const theme = document.documentElement.dataset.supportTheme === "dark" ? "light" : "dark";
@@ -735,11 +741,24 @@ if (supportPortal) {
   });
   topToolbar.querySelector("[data-premium-search]")?.addEventListener("input", (event) => {
     const query = event.target.value.trim().toLowerCase();
-    const rows = supportPortal.querySelectorAll(".support-admin-table tbody tr, [data-support-tasks] [data-task-card]");
+    const rows = supportPortal.querySelectorAll(".sp-task-table tbody tr, [data-support-tasks] [data-task-card]");
     rows.forEach((row) => {
       row.hidden = Boolean(query && !row.textContent.toLowerCase().includes(query));
     });
-  });  const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
+  });
+  const sidebarNav = supportPortal.querySelector(".support-app-nav");
+  const navIcons = { dashboard:"home",tasks:"tasks","new-task":"plus",projects:"folder",account:"user" };
+  sidebarNav?.querySelectorAll("[data-support-tab]").forEach((button) => {
+    const first = button.querySelector("span");
+    if (first) first.innerHTML=icon(navIcons[button.dataset.supportTab]||"tasks");
+  });
+  const sidebarLinks = document.createElement("div");
+  sidebarLinks.className = "sp-sidebar-links";
+  sidebarNav?.after(sidebarLinks);
+  const sidebarFooter = supportPortal.querySelector(".support-app-sidebar__footer");
+  if (sidebarFooter) sidebarFooter.innerHTML =
+    '<div class="sp-help">'+icon("chat")+'<div><strong>Need help?</strong><small>ABiT support team</small></div></div>'+
+    '<button type="button" class="sp-help-button" data-sidebar-request>Request support</button>';  const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
   const sidebarUser = supportPortal.querySelector("[data-support-sidebar-user]");
   const supportRefreshMs = 60_000;
   let supportRefreshTimer = null;
@@ -839,6 +858,7 @@ if (supportPortal) {
   const setSupportVisibility = (isSignedIn) => {
     if (signedOutShell) signedOutShell.hidden = isSignedIn;
     if (signedInShell) signedInShell.hidden = !isSignedIn;
+    document.documentElement.classList.toggle("support-authenticated", isSignedIn);
   };
 
   const supportWorkspaceHash = (clientCode) =>
@@ -1118,7 +1138,7 @@ if (supportPortal) {
         '<span class="support-task-card__eyebrow">' + escapeText(task.company ? task.company + " · " + (task.project || "") : (task.project || "Support task")) + '</span>' +
         '<h4>' + escapeText(cleanRichText(task.title) || task.title) + '</h4></div>' +
         '<span class="support-task-status">' + escapeText(stage) + '</span></div>' +
-        itemMeta([["Expected due", dueText], ["ERP Task", taskId]]) +
+        itemMeta([["Expected due", dueText], ["ERP Task", taskId], ["Assigned to", task.assignedTo || "Unassigned"], ["Priority", task.priority || "Medium"]]) +
         (description ? '<div class="support-task-description">' + escapeText(description).replace(/\n/g, "<br>") + '</div>' : '') +
         '<div class="support-task-card__footer">' +
         (task.completedBy ? '<span>Completed by <strong>' + escapeText(task.completedBy) + '</strong></span>' : '<span>ERP-linked task</span>') +
@@ -1194,43 +1214,50 @@ if (supportPortal) {
   });
 
   const clientOverviewPanel = document.createElement("div");
-  clientOverviewPanel.className = "support-client-feature-grid";
+  clientOverviewPanel.className = "sp-client-dashboard";
   const clientDashboardView = supportPortal.querySelector('[data-support-view="dashboard"]');
   clientDashboardView?.querySelector(".support-dashboard-metrics")?.after(clientOverviewPanel);
   const renderClientOverview = (overview) => {
     const user = readStoredAuthUser();
-    if (overview?.isSupportAdmin) {
-      clientOverviewPanel.hidden = true;
-      return;
+    const isAdmin = Boolean(overview?.isSupportAdmin);
+    clientOverviewPanel.hidden = isAdmin;
+    clientDashboardView?.classList.toggle("sp-client-dashboard-ready", !isAdmin);
+    if (!isAdmin) clientOverviewPanel.innerHTML = renderSupportClientDashboard(overview, user);
+  };
+  const openSupportTask = (taskId) => {
+    if (!taskId) return;
+    activeTaskStatus = "all";
+    renderTasks(supportTasks);
+    taskFilterButtons.forEach(b => b.classList.toggle("is-active", b.dataset.taskStatus === "all"));
+    activateSupportTab("tasks");
+    const card = Array.from(tasksList?.querySelectorAll("[data-task-card]") || [])
+      .find(node => node.dataset.taskCard === String(taskId));
+    if (card) {
+      card.scrollIntoView({ behavior:"smooth", block:"start" });
+      const toggle = card.querySelector("[data-task-thread-toggle]");
+      if (toggle?.getAttribute("aria-expanded") !== "true") toggle?.click();
     }
-    clientOverviewPanel.hidden = false;
-    const projects = Array.isArray(overview?.projects) ? overview.projects : [];
-    const tasks = Array.isArray(overview?.tasks) ? overview.tasks : [];
-    const active = tasks.filter((task) => normalizeTaskStatus(task.stage) !== "completed");
-    const due = tasks.filter((task) => task.deadline).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0,5);
-    const heading = clientDashboardView?.querySelector(".support-view-heading h3");
-    if (heading) heading.textContent = "Welcome to " + (user?.company?.name || "your support workspace");
-    clientOverviewPanel.innerHTML = '<section class="support-admin-section">' +
-      '<h3 class="support-admin-section-title">Active projects</h3><div class="support-client-projects">' +
-      (projects.map((project) =>
-        '<article class="support-client-project"><h4>' + escapeText(project.title) + '</h4>' +
-        '<div class="support-admin-numbers">' + escapeText(project.stage || "Active") +
-        ' · ' + (project.openTasks || 0) + ' open tasks</div>' +
-        '<div class="support-progress" aria-label="' + Number(project.progress || 0) +
-        '% complete"><span style="--value:' + Number(project.progress || 0) +
-        '%"></span></div></article>').join("") || '<p>No active projects available.</p>') +
-      '</div></section><section class="support-admin-section">' +
-      '<h3 class="support-admin-section-title">Upcoming work &amp; task activity</h3>' +
-      '<div class="support-client-activity">' +
-      ((due.length ? due : active.slice(0,5)).map((task) =>
-        '<div><strong>' + escapeText(task.title) + '</strong><p>' +
-        escapeText(task.project || "Support") + ' · ' + escapeText(task.stage || "Open") +
-        (task.deadline ? ' · Due ' + escapeText(formatDate(task.deadline)) : '') +
-        '</p></div>').join("") || '<p>No pending task activity.</p>') +
-      '</div><button type="button" class="btn outline" data-client-show-tasks>View support tasks</button></section>';
   };
   clientOverviewPanel.addEventListener("click", (event) => {
-    if (event.target.closest("[data-client-show-tasks]")) activateSupportTab("tasks");
+    const target = event.target.closest("[data-admin-open-task]");
+    if (target) { openSupportTask(target.dataset.adminOpenTask); return; }
+    if (event.target.closest("[data-client-go-tasks]")) activateSupportTab("tasks");
+    if (event.target.closest("[data-client-go-projects]")) activateSupportTab("projects");
+  });
+  sidebarLinks.addEventListener("click", (event) => {
+    const company = event.target.closest("[data-select-company]");
+    if (company) {
+      activateSupportTab("dashboard");
+      const filter = adminPanel.querySelector("[data-admin-company]");
+      if (filter) { filter.value = company.dataset.selectCompany; filter.dispatchEvent(new Event("change",{bubbles:true})); }
+      document.getElementById("sp-admin-tasks")?.scrollIntoView({ behavior:"smooth",block:"start" });
+      return;
+    }
+    const action = event.target.closest("[data-client-go-projects], [data-sidebar-open-list]");
+    if (action) activateSupportTab(action.dataset.sidebarOpenList || "projects");
+  });
+  sidebarFooter?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-sidebar-request]")) activateSupportTab(readStoredAuthUser()?.isSupportAdmin?"tasks":"new-task");
   });
   // Support Admin sees all support-enabled ERP companies, with project/status rollups.
   let adminTaskIds = null;
@@ -1243,94 +1270,27 @@ if (supportPortal) {
   const renderAdminOverview = (overview) => {
     if (!overview?.isSupportAdmin) {
       adminPanel.hidden = true;
+      dashboardView?.classList.remove("is-admin-dashboard");
       adminTaskIds = null;
       return;
     }
-    const companies = Array.isArray(overview.companies) ? overview.companies : [];
     const tasks = Array.isArray(overview.tasks) ? overview.tasks : [];
-    const incoming = adminTaskIds ? tasks.filter((task) => !adminTaskIds.has(String(task.id))) : [];
-    if (!adminTaskIds) adminTaskIds = new Set();
-    tasks.forEach((task) => adminTaskIds.add(String(task.id)));
-    const companyCards = companies.map((company) =>
-      '<section class="support-admin-company"><h3>' + escapeText(company.name) +
-      ' <small>' + company.totalTasks + ' tasks</small></h3>' +
-      '<div class="support-admin-numbers">Projects: ' + company.projectCount +
-      ' · Open: ' + company.openTasks + ' · In progress: ' + company.inProgressTasks +
-      ' · Completed: ' + company.completedTasks + ' · Blocked: ' + company.blockedTasks + '</div>' +
-      (company.projects || []).map((project) =>
-        '<div class="support-admin-project"><strong>' + escapeText(project.title) +
-        '</strong><span>' + escapeText(project.stage) +
-        ' · ' + project.openTasks + ' active · ' +
-        (project.totalTasks || 0) + ' tasks · Open: ' + project.openTasks + ' · In progress: ' + (project.inProgressTasks || 0) +
-        ' · Completed: ' + (project.completedTasks || 0) + ' · Blocked: ' + (project.blockedTasks || 0) + '</span></div>'
-      ).join("") + '</section>'
-    ).join("");
+    const incoming = adminTaskIds ? tasks.filter(task => !adminTaskIds.has(String(task.id))) : [];
+    adminTaskIds = new Set(tasks.map(task => String(task.id)));
     adminPanel.hidden = false;
     dashboardView?.classList.add("is-admin-dashboard");
-    const completed = tasks.filter((t) => normalizeTaskStatus(t.stage) === "completed").length;
-    const working = tasks.filter((t) => normalizeTaskStatus(t.stage) === "in-progress").length;
-    const blocked = tasks.filter((t) => normalizeTaskStatus(t.stage) === "blocked").length;
-    const opened = tasks.length - completed - working - blocked;
-    const percent = (n) => tasks.length ? (n * 100 / tasks.length).toFixed(1) + "%" : "0%";
-    const companyRows = companies.map((company) => {
-      const progress = company.totalTasks ? Math.round(company.completedTasks / company.totalTasks * 100) : 0;
-      return '<tr data-admin-company-row="' + escapeText(company.name) + '"><td><strong>' + escapeText(company.name) +
-        '</strong></td><td>' + company.projectCount + '</td><td>' + company.totalTasks +
-        '</td><td><span class="support-admin-progress"><i style="width:' + progress +
-        '%"></i></span> ' + progress + '%</td><td>' + company.openTasks + '</td><td>' +
-        company.completedTasks + '</td></tr>';
-    }).join("");
-    adminPanel.innerHTML =
-      '<header class="support-admin-head"><div><span class="eyebrow">ABiT SUPPORT OPERATIONS</span>' +
-      '<h2>Support Admin Center</h2><p>Manage customer companies, ERP projects and support task activity.</p></div>' +
-      '<button type="button" class="btn primary" data-admin-notifications>Enable task alerts</button></header>' +
-      '<div class="support-admin-stats"><strong><span>Customer companies</span>' + companies.length +
-      '</strong><strong><span>Active projects</span>' + (overview.projects || []).length +
-      '</strong><strong><span>Total ERP tasks</span>' + tasks.length +
-      '</strong><strong><span>Open tasks</span>' + opened + '</strong></div>' +
-      '<div class="support-admin-grid">' +
-      '<section class="support-admin-section"><h3 class="support-admin-section-title">Companies overview</h3>' +
-      '<div class="support-admin-table-wrap"><table class="support-admin-customer-table"><thead><tr><th>Company</th><th>Projects</th><th>Tasks</th><th>Progress</th><th>Open</th><th>Done</th></tr></thead>' +
-      '<tbody>' + companyRows + '</tbody></table></div></section>' +
-      '<section class="support-admin-section"><h3 class="support-admin-section-title">Task status</h3>' +
-      '<div class="support-admin-status-panel"><div class="support-admin-donut" style="--done:' +
-      percent(completed) + ';--working:' + percent(working) + '"><span>' + tasks.length +
-      '<small>Total tasks</small></span></div>' +
-      '<div class="support-admin-status-list"><div><span>Open</span><b>' + opened +
-      '</b></div><div><span>In progress</span><b>' + working +
-      '</b></div><div><span>Completed</span><b>' + completed +
-      '</b></div><div><span>Blocked</span><b>' + blocked +
-      '</b></div></div></div></section></div>' +
-      '<section class="support-admin-section"><h3 class="support-admin-section-title">Customer projects</h3>' +
-      '<div class="support-admin-company-grid">' +
-      (companyCards || '<p>No support-enabled customer companies found.</p>') +
-      '</div></section>' +
-      '<section class="support-admin-section" style="margin-top:18px"><h3 class="support-admin-section-title">Recent support tasks</h3>' +
-      '<div class="support-admin-filters"><select data-admin-company><option value="">All companies</option>' +
-      companies.map((company) => '<option value="' + escapeText(company.name) + '">' + escapeText(company.name) + '</option>').join("") +
-      '</select><select data-admin-status><option value="">All statuses</option>' +
-      [...new Set(tasks.map((task) => String(task.stage || "Open")))].sort().map((status) =>
-        '<option value="' + escapeText(status) + '">' + escapeText(status) + '</option>').join("") + '</select></div>' +
-      '<div class="support-admin-table-wrap"><table class="support-admin-table"><thead><tr><th>Company</th><th>Project</th><th>Task</th><th>Status</th><th>Due</th></tr></thead><tbody>' +
-      tasks.map((task) => '<tr data-admin-task-company="' + escapeText(task.company || "") +
-        '" data-admin-task-status="' + escapeText(task.stage || "Open") + '"><td>' + escapeText(task.company || "") +
-        '</td><td>' + escapeText(task.project || "") + '</td><td><button type="button" class="support-admin-task-link" data-admin-open-task="' +
-        escapeText(task.erpTaskId || task.id) + '">' + escapeText(task.title) + '</button> <button type="button" class="support-admin-notify" data-admin-notify-task="' +
-        escapeText(task.erpTaskId || task.id) + '" title="Send instructions to assigned ERP users">Notify assignee</button></td><td>' +
-        escapeText(task.stage || "Open") + '</td><td>' + escapeText(formatDate(task.deadline) || "Not set") + '</td></tr>').join("") +
-      '</tbody></table></div><div class="support-admin-notice" role="status" data-admin-notice hidden></div></section>';
+    const user = readStoredAuthUser();
+    adminPanel.innerHTML = renderSupportAdminDashboard(overview, user);
     if (incoming.length) {
-      const message = incoming.length + ' new support task(s): ' + incoming.slice(0, 3).map((task) =>
-        (task.company || "") + ' - ' + task.title).join("; ");
-      const notice = adminPanel.querySelector("[data-admin-notice]");
-      notice.hidden = false;
-      notice.textContent = message;
+      const message = incoming.length + " new support task(s): " +
+        incoming.slice(0,3).map(t => (t.company||"") + " - " + t.title).join("; ");
+      const alert = adminPanel.querySelector("[data-admin-notice]");
+      if (alert) { alert.hidden = false; alert.textContent = message; }
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification("New ABiT support tasks", { body: message });
       }
     }
   };
-
   adminPanel.addEventListener("change", (event) => {
     if (!event.target.closest("[data-admin-company], [data-admin-status]")) return;
     const company = adminPanel.querySelector("[data-admin-company]")?.value || "";
@@ -1345,44 +1305,48 @@ if (supportPortal) {
       if ("Notification" in window) await Notification.requestPermission();
       return;
     }
-    const notifyButton = event.target.closest("[data-admin-notify-task]");
-    if (notifyButton) {
-      const message = window.prompt("Instructions for assigned ERPNext user (saved under Task activity):");
-      if (!message?.trim()) return;
-      notifyButton.disabled = true;
-      try {
-        const result = await apiJsonRequest("/api/support/admin/tasks/" +
-          encodeURIComponent(notifyButton.dataset.adminNotifyTask) + "/notify",
-          { method: "POST", payload: { message: message.trim() }, auth: true });
-        const notice = adminPanel.querySelector("[data-admin-notice]");
-        if (notice) {
-          notice.hidden = false;
-          notice.textContent = result.notified + " assigned user(s) notified in ERPNext." +
-            (result.failed ? " " + result.failed + " notification(s) failed." : "");
-        }
-      } catch (error) {
-        const notice = adminPanel.querySelector("[data-admin-notice]");
-        if (notice) {
-          notice.hidden = false;
-          notice.textContent = error instanceof Error ? error.message : "Notification failed.";
-        }
-      } finally {
-        notifyButton.disabled = false;
+    const company=event.target.closest("[data-select-company]");
+    if (company) {
+      const filter=adminPanel.querySelector("[data-admin-company]");
+      if (filter) {
+        filter.value=company.dataset.selectCompany;
+        filter.dispatchEvent(new Event("change",{bubbles:true}));
       }
+      document.getElementById("sp-admin-tasks")?.scrollIntoView({behavior:"smooth",block:"start"});
       return;
-    }    const button = event.target.closest("[data-admin-open-task]");
-    if (!button) return;
-    activateSupportTab("tasks");
-    const task = Array.from(tasksList?.querySelectorAll("[data-task-card]") || []).find((card) =>
-      card.dataset.taskCard === button.dataset.adminOpenTask);
-    if (task) {
-      task.scrollIntoView({ behavior: "smooth", block: "center" });
-      task.querySelector("[data-task-thread-toggle]")?.click();
     }
-  });
-  const renderSignedOut = () => {
+    if(event.target.closest("[data-admin-scroll-tasks]")) {
+      document.getElementById("sp-admin-tasks")?.scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
+    const notifyButton=event.target.closest("[data-admin-notify-task]");
+    if (notifyButton) {
+      const message=window.prompt("Instructions for the assigned ERPNext user (saved in Task activity):");
+      if (!message?.trim()) return;
+      notifyButton.disabled=true;
+      const notice=adminPanel.querySelector("[data-admin-notice]");
+      try {
+        const result=await apiJsonRequest("/api/support/admin/tasks/"+
+          encodeURIComponent(notifyButton.dataset.adminNotifyTask)+"/notify",
+          {method:"POST",payload:{message:message.trim()},auth:true});
+        if (notice) {
+          notice.hidden=false;
+          notice.textContent=result.notified+" assigned ERP users notified"+
+            (result.failed ? "; "+result.failed+" failed." : ".");
+        }
+      } catch(error) {
+        if (notice) {notice.hidden=false;notice.textContent=error.message||"Notification failed.";}
+      } finally {notifyButton.disabled=false;}
+      return;
+    }
+    const task=event.target.closest("[data-admin-open-task]");
+    if (task) openSupportTask(task.dataset.adminOpenTask);
+  });  const renderSignedOut = () => {
     adminPanel.hidden = true;
     dashboardView?.classList.remove("is-admin-dashboard");
+    clientDashboardView?.classList.remove("sp-client-dashboard-ready");
+    clientOverviewPanel.hidden=true;
+    sidebarLinks.innerHTML="";
     adminTaskIds = null;
     setSupportVisibility(false);
     if (userHeading) userHeading.textContent = "Sign in to view your workspace.";
@@ -1437,6 +1401,14 @@ if (supportPortal) {
     syncSupportWorkspaceRoute(user);
     setSupportVisibility(true);
     topToolbar.querySelector(".support-premium-toolbar__title strong").textContent = user.isSupportAdmin ? "Support Admin Center" : "Client Support Portal";
+    const profile=topToolbar.querySelector(".sp-top-name");
+    const avatar=topToolbar.querySelector(".sp-top-avatar");
+    if(profile) profile.textContent = user.name || user.login || "Support";
+    if(avatar) avatar.textContent = (user.name || user.login || "AB").trim().split(/\s+/).slice(0,2).map(part=>part[0]?.toUpperCase()||"").join("");
+    const newTaskNav=supportPortal.querySelector('[data-support-tab="new-task"]');
+    if(newTaskNav) newTaskNav.hidden=Boolean(user.isSupportAdmin);
+    const eyebrow=supportPortal.querySelector(".support-app-identity .eyebrow");
+    if(eyebrow) eyebrow.textContent=user.isSupportAdmin?"SUPPORT OPERATIONS":"CLIENT WORKSPACE";
     const workspaceName = user.company?.name || user.name || "Customer";
     const signedInName = user.login || user.email || user.name || "Customer";
     if (userHeading) userHeading.textContent = `${workspaceName} workspace`;
@@ -1455,6 +1427,7 @@ if (supportPortal) {
       const overview = await apiJsonRequest("/api/support/overview", { auth: true });
       renderAdminOverview(overview);
       renderClientOverview(overview);
+      sidebarLinks.innerHTML=renderSupportSidebar(overview,Boolean(overview.isSupportAdmin));
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);

@@ -249,7 +249,7 @@ export function createErpSupportService({ rootDir }) {
   const getTasks = async (projectNames) => {
     if (!projectNames.length) return [];
     return erpListAll("Task", {
-      fields: ["name", "subject", "status", "description", "project", "priority", "exp_end_date", "modified", "modified_by"],
+      fields: ["name", "subject", "status", "description", "project", "priority", "exp_end_date", "modified", "modified_by", "_assign"],
       filters: [["project", "in", projectNames]],
       orderBy: "modified desc",
       limit: 1000,
@@ -479,6 +479,29 @@ export function createErpSupportService({ rootDir }) {
     }
     return { success: failures.length === 0, notified: notifications.length, failed: failures.length, recipients: notifications };
   };
+  // Assignment source of truth is the ERPNext Task _assign user list.
+  const parseTaskAssignees = (raw) => {
+    try {
+      const list = typeof raw === "string" ? JSON.parse(raw || "[]") : raw;
+      return Array.isArray(list) ? [...new Set(list.filter((x) => typeof x === "string" && x.trim()).map(trim))] : [];
+    } catch { return []; }
+  };
+  const getTaskAssigneeNames = async (tasks) => {
+    const ids = [...new Set(tasks.flatMap((task) => parseTaskAssignees(task._assign)))];
+    const names = new Map();
+    if (ids.length) {
+      try {
+        const users = await erpListAll("User", {
+          fields: ["name", "full_name", "username"],
+          filters: [["name", "in", ids]],
+        });
+        users.forEach((u) => names.set(u.name, trim(u.full_name) || trim(u.username) || u.name));
+      } catch {
+        // ERP user lookup may be permission-restricted; retain actual user IDs.
+      }
+    }
+    return names;
+  };
   const overview = async (request) => {
     const session = await requireSession(request);
     const supportedCustomers = session.isSupportAdmin ? await getSupportedCustomers() : [session.customer];
@@ -486,6 +509,7 @@ export function createErpSupportService({ rootDir }) {
     const projectByName = new Map(projects.map((project) => [project.name, project]));
     const projectNames = projects.map((p) => p.name);
     const tasks = await getTasks(projectNames);
+    const taskAssigneeNames = await getTaskAssigneeNames(tasks);
 
     const taskCards = tasks.map((task) => ({
       id: task.name,
@@ -498,6 +522,9 @@ export function createErpSupportService({ rootDir }) {
       remainingHours: 0,
       updatedAt: task.modified,
       description: task.description || "",
+      priority: task.priority || "Medium",
+      assignedUsers: parseTaskAssignees(task._assign),
+      assignedTo: parseTaskAssignees(task._assign).map((id) => taskAssigneeNames.get(id) || id).join(", ") || "Unassigned",
       completedBy: /completed|closed/i.test(task.status || "") ? task.modified_by || "" : "",
       syncStatus: "ERPNext",
     }));
@@ -527,10 +554,10 @@ export function createErpSupportService({ rootDir }) {
       title: task.title,
       stage: task.stage,
       state: task.stage,
-      priority: "Normal",
+      priority: task.priority,
       project: task.project,
       company: task.company,
-      owner: "ABiT Team",
+      owner: task.assignedTo,
       updatedAt: task.updatedAt,
     }));
 
