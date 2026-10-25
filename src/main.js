@@ -687,7 +687,15 @@ if (authPanel) {
 
 const supportPortal = document.querySelector("[data-support-portal]");
 if (supportPortal) {
-  const signedOutShell = supportPortal.querySelector("[data-support-signed-out]");
+  const savedTheme = localStorage.getItem("abit-support-theme");
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const applySupportTheme = (value) => {
+    const theme = value === "light" || value === "dark" ? value :
+      (systemDark.matches ? "dark" : "light");
+    document.documentElement.dataset.supportTheme = theme;
+    return theme;
+  };
+  applySupportTheme(savedTheme);  const signedOutShell = supportPortal.querySelector("[data-support-signed-out]");
   const signedInShell = supportPortal.querySelector("[data-support-signed-in]");
   const loginForm = supportPortal.querySelector("[data-support-login-form]");
   const forgotPasswordButton = supportPortal.querySelector("[data-support-forgot-password]");
@@ -713,7 +721,25 @@ if (supportPortal) {
   const supportViews = Array.from(supportPortal.querySelectorAll("[data-support-view]"));
   const taskFilterButtons = Array.from(supportPortal.querySelectorAll("[data-task-status]"));
   const taskFilterCounts = Array.from(supportPortal.querySelectorAll("[data-task-filter-count]"));
-  const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
+  const topToolbar = document.createElement("div");
+  topToolbar.className = "support-premium-toolbar";
+  topToolbar.innerHTML = '<div class="support-premium-toolbar__title"><strong>ABiT Support Portal</strong>' +
+    '<span>Projects, task updates and customer support</span></div>' +
+    '<label class="support-premium-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search support tasks..." aria-label="Search tasks" data-premium-search></label>' +
+    '<button type="button" class="support-theme-toggle" data-theme-toggle aria-label="Toggle light or dark theme">◐ <span>Theme</span></button>';
+  supportPortal.querySelector(".support-app-content")?.prepend(topToolbar);
+  topToolbar.querySelector("[data-theme-toggle]")?.addEventListener("click", () => {
+    const theme = document.documentElement.dataset.supportTheme === "dark" ? "light" : "dark";
+    localStorage.setItem("abit-support-theme", theme);
+    applySupportTheme(theme);
+  });
+  topToolbar.querySelector("[data-premium-search]")?.addEventListener("input", (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    const rows = supportPortal.querySelectorAll(".support-admin-table tbody tr, [data-support-tasks] [data-task-card]");
+    rows.forEach((row) => {
+      row.hidden = Boolean(query && !row.textContent.toLowerCase().includes(query));
+    });
+  });  const sidebarCompany = supportPortal.querySelector("[data-support-sidebar-company]");
   const sidebarUser = supportPortal.querySelector("[data-support-sidebar-user]");
   const supportRefreshMs = 60_000;
   let supportRefreshTimer = null;
@@ -1410,6 +1436,7 @@ if (supportPortal) {
     isSupportLoading = true;
     syncSupportWorkspaceRoute(user);
     setSupportVisibility(true);
+    topToolbar.querySelector(".support-premium-toolbar__title strong").textContent = user.isSupportAdmin ? "Support Admin Center" : "Client Support Portal";
     const workspaceName = user.company?.name || user.name || "Customer";
     const signedInName = user.login || user.email || user.name || "Customer";
     if (userHeading) userHeading.textContent = `${workspaceName} workspace`;
