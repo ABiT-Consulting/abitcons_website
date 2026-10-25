@@ -2092,3 +2092,26 @@ html.support-host .support-app-content {
   }
 }
 
+
+/* Support administration: visible only after ERP-validated Support Admin login */
+.support-admin-center{display:block;margin:0 0 24px;padding:22px;border:1px solid #d9e3ee;border-radius:16px;background:#f6f9fd;color:#183048}
+.support-admin-center[hidden]{display:none!important}
+.support-admin-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.support-admin-head h2{margin:0 0 6px;font-size:clamp(22px,3vw,30px)}
+.support-admin-head p{margin:0 0 14px;opacity:.75}
+.support-admin-stats{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 20px}
+.support-admin-stats strong{padding:12px 18px;background:white;border-radius:10px;border:1px solid #e1e8ef}
+.support-admin-company-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:15px;margin-bottom:26px}
+.support-admin-company{background:white;padding:18px;border:1px solid #e0e7ed;border-radius:13px;box-shadow:0 2px 8px #152b3b10}
+.support-admin-company h3{margin:0 0 10px}.support-admin-company h3 small{font-size:12px;font-weight:400}
+.support-admin-numbers{font-size:13px;line-height:1.8}
+.support-admin-project{display:flex;flex-direction:column;gap:3px;padding:9px 0;border-top:1px solid #e8edf1;font-size:13px}
+.support-admin-project span{opacity:.78}
+.support-admin-filters{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.support-admin-filters select{padding:8px;border:1px solid #cdd9e5;border-radius:7px;background:white;max-width:100%}
+.support-admin-table-wrap{overflow:auto;max-height:550px;border-radius:10px;background:white}
+.support-admin-table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+.support-admin-table td,.support-admin-table th{padding:11px;border-bottom:1px solid #e7edf3;text-align:left;vertical-align:top}
+.support-admin-task-link{border:0;background:transparent;text-align:left;color:#176ea3;cursor:pointer;text-decoration:underline}
+.support-admin-notice{margin:14px 0;padding:12px;background:#e4f6e8;border-radius:10px}
+.support-admin-table tr[hidden]{display:none}

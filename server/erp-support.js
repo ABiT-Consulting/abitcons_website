@@ -80,25 +80,38 @@ export function createErpSupportService({ rootDir }) {
     return readJson(response);
   };
 
-  const erpList = async (doctype, { fields = ["name"], filters = [], orderBy = "", limit = 500 } = {}) => {
+  const erpList = async (doctype, { fields = ["name"], filters = [], orderBy = "", limit = 500, start = 0 } = {}) => {
     const query = new URLSearchParams({
       fields: JSON.stringify(fields),
       filters: JSON.stringify(filters),
       limit_page_length: String(limit),
+      limit_start: String(start),
     });
     if (orderBy) query.set("order_by", orderBy);
     const data = await erpRequest("GET", "/api/resource/" + encodeURIComponent(doctype) + "?" + query);
     return Array.isArray(data.data) ? data.data : [];
   };
 
+  // Fetch all pages so the administrator does not silently miss older tasks.
+  const erpListAll = async (doctype, options = {}) => {
+    const results = [];
+    const pageSize = 500;
+    for (let start = 0; start < 20000; start += pageSize) {
+      const page = await erpList(doctype, { ...options, limit: pageSize, start });
+      results.push(...page);
+      if (page.length < pageSize) return results;
+    }
+    throw new Error("Support result limit reached; narrow the ERP dataset.");
+  };
   const validateMappedUser = async (erpUser) => {
     const doc = (await erpRequest("GET", "/api/resource/User/" + encodeURIComponent(erpUser))).data;
-    if (!doc?.enabled || Number(doc.custom_support_portal_enabled || 0) !== 1) {
+    const isSupportAdmin = Number(doc?.custom_support_admin || 0) === 1;
+    if (!doc?.enabled || (!isSupportAdmin && Number(doc.custom_support_portal_enabled || 0) !== 1)) {
       const error = new Error("This ERP user is not enabled for the support portal.");
       error.status = 403;
       throw error;
     }
-    const customer = trim(doc.custom_support_customer);
+    const customer = isSupportAdmin ? "__SUPPORT_ADMIN__" : trim(doc.custom_support_customer);
     if (!customer) {
       const error = new Error("No support customer is assigned to this ERP user.");
       error.status = 403;
@@ -110,6 +123,7 @@ export function createErpSupportService({ rootDir }) {
       fullName: trim(doc.full_name) || trim(doc.first_name) || trim(doc.username) || doc.name,
       email: trim(doc.custom_support_email) || trim(doc.email) || doc.name,
       customer,
+      isSupportAdmin,
     };
   };
 
@@ -172,9 +186,10 @@ export function createErpSupportService({ rootDir }) {
       login: mapped.login,
       name: mapped.fullName,
       email: mapped.email,
-      company: { name: mapped.customer, code: mapped.customer },
-      clientCode: mapped.customer,
-      supportUrl: "#support-portal/" + encodeURIComponent(mapped.customer),
+      company: { name: mapped.isSupportAdmin ? "ABiT Support Admin" : mapped.customer, code: mapped.isSupportAdmin ? "ADMIN" : mapped.customer },
+      isSupportAdmin: mapped.isSupportAdmin,
+      clientCode: mapped.isSupportAdmin ? "ADMIN" : mapped.customer,
+      supportUrl: "#support-portal/" + encodeURIComponent(mapped.isSupportAdmin ? "ADMIN" : mapped.customer),
     };
   };
 
@@ -204,16 +219,36 @@ export function createErpSupportService({ rootDir }) {
   };
 
   const getProjects = async (customer) =>
-    erpList("Project", {
+    erpListAll("Project", {
       fields: ["name", "project_name", "status", "percent_complete", "modified", "custom_support_customer"],
       filters: [["custom_support_customer", "=", customer], ["is_active", "=", "Yes"]],
       orderBy: "modified desc",
       limit: 200,
     });
 
+  // Only companies with at least one active ERP user enabled for support
+  // are visible in the ABiT Support Admin workspace.
+  const getSupportedCustomers = async () => {
+    const users = await erpListAll("User", {
+      fields: ["name", "enabled", "custom_support_portal_enabled", "custom_support_customer"],
+      filters: [["enabled", "=", 1], ["custom_support_portal_enabled", "=", 1]],
+    });
+    return [...new Set(users.map((user) => trim(user.custom_support_customer)).filter(Boolean))];
+  };
+
+  const getAccessibleProjects = async (session, allowedCustomers = null) => {
+    if (!session.isSupportAdmin) return getProjects(session.customer);
+    const customers = allowedCustomers || await getSupportedCustomers();
+    const projects = [];
+    for (let i = 0; i < customers.length; i += 5) {
+      const batch = await Promise.all(customers.slice(i, i + 5).map(getProjects));
+      projects.push(...batch.flat());
+    }
+    return projects;
+  };
   const getTasks = async (projectNames) => {
     if (!projectNames.length) return [];
-    return erpList("Task", {
+    return erpListAll("Task", {
       fields: ["name", "subject", "status", "description", "project", "priority", "exp_end_date", "modified", "modified_by"],
       filters: [["project", "in", projectNames]],
       orderBy: "modified desc",
@@ -246,7 +281,7 @@ export function createErpSupportService({ rootDir }) {
       throw safeError;
     }
 
-    const projects = await getProjects(session.customer);
+    const projects = await getAccessibleProjects(session);
     const allowedProjects = new Set(projects.map((project) => project.name));
     if (!task?.project || !allowedProjects.has(task.project)) {
       const error = new Error("You do not have access to this support task.");
@@ -395,7 +430,9 @@ export function createErpSupportService({ rootDir }) {
 
   const overview = async (request) => {
     const session = await requireSession(request);
-    const projects = await getProjects(session.customer);
+    const supportedCustomers = session.isSupportAdmin ? await getSupportedCustomers() : [session.customer];
+    const projects = await getAccessibleProjects(session, supportedCustomers);
+    const projectByName = new Map(projects.map((project) => [project.name, project]));
     const projectNames = projects.map((p) => p.name);
     const tasks = await getTasks(projectNames);
 
@@ -405,6 +442,7 @@ export function createErpSupportService({ rootDir }) {
       title: task.subject || task.name,
       stage: task.status || "Open",
       project: task.project || "",
+      company: projectByName.get(task.project)?.custom_support_customer || session.customer,
       deadline: task.exp_end_date || null,
       remainingHours: 0,
       updatedAt: task.modified,
@@ -420,6 +458,7 @@ export function createErpSupportService({ rootDir }) {
       return {
         id: project.name,
         title: project.project_name || project.name,
+        company: project.custom_support_customer || session.customer,
         stage: project.status || "Open",
         owner: "ABiT Team",
         openTasks: active,
@@ -435,10 +474,25 @@ export function createErpSupportService({ rootDir }) {
       state: task.stage,
       priority: "Normal",
       project: task.project,
+      company: task.company,
       owner: "ABiT Team",
       updatedAt: task.updatedAt,
     }));
 
+    const companies = supportedCustomers.map((name) => {
+      const companyProjects = projectCards.filter((project) => project.company === name);
+      const companyTasks = taskCards.filter((task) => task.company === name);
+      return {
+        name,
+        projectCount: companyProjects.length,
+        totalTasks: companyTasks.length,
+        openTasks: companyTasks.filter((task) => /open|planned/i.test(task.stage)).length,
+        inProgressTasks: companyTasks.filter((task) => /progress|pending|working/i.test(task.stage)).length,
+        completedTasks: companyTasks.filter((task) => /completed|closed/i.test(task.stage)).length,
+        blockedTasks: companyTasks.filter((task) => /blocked|hold/i.test(task.stage)).length,
+        projects: companyProjects,
+      };
+    });
     return {
       summary: {
         openTickets: tickets.length,
@@ -449,6 +503,8 @@ export function createErpSupportService({ rootDir }) {
         completedTasks: taskCards.filter((task) => /completed|closed/i.test(task.stage)).length,
         lastUpdated: new Date().toISOString(),
       },
+      isSupportAdmin: session.isSupportAdmin,
+      companies,
       tickets,
       projects: projectCards,
       tasks: taskCards,
@@ -482,6 +538,11 @@ export function createErpSupportService({ rootDir }) {
 
   const createTask = async (request, body) => {
     const session = await requireSession(request);
+    if (session.isSupportAdmin) {
+      const error = new Error("Support admins monitor tasks; create new tasks from the client workspace.");
+      error.status = 403;
+      throw error;
+    }
     const subject = trim(body?.subject).slice(0, 180);
     const details = trim(body?.message ?? body?.details).slice(0, 10000);
     if (!subject || !details) {
@@ -490,7 +551,7 @@ export function createErpSupportService({ rootDir }) {
       throw error;
     }
 
-    const projects = await getProjects(session.customer);
+    const projects = await getAccessibleProjects(session);
     const requestedProject = trim(body?.projectId || body?.project || "");
     const project = requestedProject
       ? projects.find((item) => item.name === requestedProject)
