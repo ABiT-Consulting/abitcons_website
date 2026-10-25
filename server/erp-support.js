@@ -428,6 +428,57 @@ export function createErpSupportService({ rootDir }) {
     };
   };
 
+  const notifyTaskAssignees = async (request, taskId, body) => {
+    const session = await requireSession(request);
+    if (!session.isSupportAdmin) {
+      const error = new Error("Support Admin permission required.");
+      error.status = 403;
+      throw error;
+    }
+    const task = await getAccessibleTask(session, taskId);
+    const message = trim(body?.message).slice(0, 4000);
+    if (!message) {
+      const error = new Error("Instructions are required.");
+      error.status = 422;
+      throw error;
+    }
+    let assigned = [];
+    try {
+      assigned = JSON.parse(task._assign || "[]");
+    } catch {
+      assigned = [];
+    }
+    const recipients = [...new Set(Array.isArray(assigned) ? assigned.filter((x) => typeof x === "string" && x.trim()).map(trim) : [])].slice(0, 20);
+    if (!recipients.length) {
+      const error = new Error("Assign an ERPNext user to this task before notifying the team.");
+      error.status = 422;
+      throw error;
+    }
+    const subject = "Support task #" + task.name + ": " + (task.subject || "Task update");
+    const content = "<p>" + escapeHtml(message).replace(/\n/g, "<br>") + "</p>";
+    const notifications = [];
+    const failures = [];
+    for (const recipient of recipients) {
+      try {
+        await erpRequest("POST", "/api/resource/Notification%20Log", {
+          type: "Alert",
+          for_user: recipient,
+          subject,
+          email_content: content,
+          document_type: "Task",
+          document_name: task.name,
+          from_user: session.erpUser,
+        });
+        notifications.push(recipient);
+      } catch {
+        failures.push(recipient);
+      }
+    }
+    if (notifications.length) {
+      await addTaskReply(request, task.name, { message: "Support Admin instructions sent to " + notifications.join(", ") + ":\n" + message });
+    }
+    return { success: failures.length === 0, notified: notifications.length, failed: failures.length, recipients: notifications };
+  };
   const overview = async (request) => {
     const session = await requireSession(request);
     const supportedCustomers = session.isSupportAdmin ? await getSupportedCustomers() : [session.customer];
@@ -462,6 +513,10 @@ export function createErpSupportService({ rootDir }) {
         stage: project.status || "Open",
         owner: "ABiT Team",
         openTasks: active,
+        totalTasks: related.length,
+        inProgressTasks: related.filter((task) => /progress|pending|working/i.test(task.stage)).length,
+        completedTasks: related.filter((task) => /completed|closed/i.test(task.stage)).length,
+        blockedTasks: related.filter((task) => /blocked|hold/i.test(task.stage)).length,
         progress: Number(project.percent_complete || 0),
         erpProjectId: project.name,
       };
@@ -606,6 +661,7 @@ export function createErpSupportService({ rootDir }) {
     createTask,
     getTaskActivity,
     addTaskReply,
+    notifyTaskAssignees,
     requireSession,
     recoveryMessage: "Please contact your ABiT account manager to reset your ERP support password.",
   };

@@ -2115,3 +2115,5 @@ html.support-host .support-app-content {
 .support-admin-task-link{border:0;background:transparent;text-align:left;color:#176ea3;cursor:pointer;text-decoration:underline}
 .support-admin-notice{margin:14px 0;padding:12px;background:#e4f6e8;border-radius:10px}
 .support-admin-table tr[hidden]{display:none}
+.support-admin-notify{margin:5px 0 0 8px;border:1px solid #9fbfd4;border-radius:7px;background:#eaf4fd;color:#175b80;font-size:12px;cursor:pointer;padding:4px 8px}
+.support-admin-notify:disabled{opacity:.55;cursor:wait}

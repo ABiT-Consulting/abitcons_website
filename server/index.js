@@ -1387,6 +1387,18 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    const notifyMatch = requestUrl.pathname.match(/^\/api\/support\/admin\/tasks\/([^/]+)\/notify$/);
+    if (notifyMatch && request.method === "POST") {
+      const body = await readJsonBody(request);
+      try {
+        sendJson(response, 200, await erpSupport.notifyTaskAssignees(request, decodeURIComponent(notifyMatch[1]), body));
+      } catch (error) {
+        sendJson(response, error.status || 500, {
+          error: error instanceof Error ? error.message : "Could not notify the assigned ERP user.",
+        });
+      }
+      return;
+    }
     const taskActivityMatch = requestUrl.pathname.match(/^\/api\/support\/tasks\/([^/]+)\/activity$/);
     if (taskActivityMatch && request.method === "GET") {
       await handleSupportTaskActivity(request, response, decodeURIComponent(taskActivityMatch[1]));

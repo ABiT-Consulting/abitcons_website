@@ -1195,7 +1195,8 @@ if (supportPortal) {
         '<div class="support-admin-project"><strong>' + escapeText(project.title) +
         '</strong><span>' + escapeText(project.stage) +
         ' · ' + project.openTasks + ' active · ' +
-        (project.progress || 0) + '% done</span></div>'
+        (project.totalTasks || 0) + ' tasks · Open: ' + project.openTasks + ' · In progress: ' + (project.inProgressTasks || 0) +
+        ' · Completed: ' + (project.completedTasks || 0) + ' · Blocked: ' + (project.blockedTasks || 0) + '</span></div>'
       ).join("") + '</section>'
     ).join("");
     adminPanel.hidden = false;
@@ -1215,7 +1216,8 @@ if (supportPortal) {
       tasks.map((task) => '<tr data-admin-task-company="' + escapeText(task.company || "") +
         '" data-admin-task-status="' + escapeText(task.stage || "Open") + '"><td>' + escapeText(task.company || "") +
         '</td><td>' + escapeText(task.project || "") + '</td><td><button type="button" class="support-admin-task-link" data-admin-open-task="' +
-        escapeText(task.erpTaskId || task.id) + '">' + escapeText(task.title) + '</button></td><td>' +
+        escapeText(task.erpTaskId || task.id) + '">' + escapeText(task.title) + '</button> <button type="button" class="support-admin-notify" data-admin-notify-task="' +
+        escapeText(task.erpTaskId || task.id) + '" title="Send instructions to ERP assigned users">Notify assignee</button></td><td>' +
         escapeText(task.stage || "Open") + '</td><td>' + escapeText(formatDate(task.deadline) || "Not set") + '</td></tr>').join("") +
       '</tbody></table></div><div class="support-admin-notice" role="status" data-admin-notice hidden></div>';
     if (incoming.length) {
@@ -1244,7 +1246,32 @@ if (supportPortal) {
       if ("Notification" in window) await Notification.requestPermission();
       return;
     }
-    const button = event.target.closest("[data-admin-open-task]");
+    const notifyButton = event.target.closest("[data-admin-notify-task]");
+    if (notifyButton) {
+      const message = window.prompt("Instructions for assigned ERPNext user (saved under Task activity):");
+      if (!message?.trim()) return;
+      notifyButton.disabled = true;
+      try {
+        const result = await apiJsonRequest("/api/support/admin/tasks/" +
+          encodeURIComponent(notifyButton.dataset.adminNotifyTask) + "/notify",
+          { method: "POST", payload: { message: message.trim() }, auth: true });
+        const notice = adminPanel.querySelector("[data-admin-notice]");
+        if (notice) {
+          notice.hidden = false;
+          notice.textContent = result.notified + " assigned user(s) notified in ERPNext." +
+            (result.failed ? " " + result.failed + " notification(s) failed." : "");
+        }
+      } catch (error) {
+        const notice = adminPanel.querySelector("[data-admin-notice]");
+        if (notice) {
+          notice.hidden = false;
+          notice.textContent = error instanceof Error ? error.message : "Notification failed.";
+        }
+      } finally {
+        notifyButton.disabled = false;
+      }
+      return;
+    }    const button = event.target.closest("[data-admin-open-task]");
     if (!button) return;
     activateSupportTab("tasks");
     const task = Array.from(tasksList?.querySelectorAll("[data-task-card]") || []).find((card) =>
