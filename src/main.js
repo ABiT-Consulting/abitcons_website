@@ -1167,12 +1167,52 @@ if (supportPortal) {
     });
   });
 
+  const clientOverviewPanel = document.createElement("div");
+  clientOverviewPanel.className = "support-client-feature-grid";
+  const clientDashboardView = supportPortal.querySelector('[data-support-view="dashboard"]');
+  clientDashboardView?.querySelector(".support-dashboard-metrics")?.after(clientOverviewPanel);
+  const renderClientOverview = (overview) => {
+    const user = readStoredAuthUser();
+    if (overview?.isSupportAdmin) {
+      clientOverviewPanel.hidden = true;
+      return;
+    }
+    clientOverviewPanel.hidden = false;
+    const projects = Array.isArray(overview?.projects) ? overview.projects : [];
+    const tasks = Array.isArray(overview?.tasks) ? overview.tasks : [];
+    const active = tasks.filter((task) => normalizeTaskStatus(task.stage) !== "completed");
+    const due = tasks.filter((task) => task.deadline).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0,5);
+    const heading = clientDashboardView?.querySelector(".support-view-heading h3");
+    if (heading) heading.textContent = "Welcome to " + (user?.company?.name || "your support workspace");
+    clientOverviewPanel.innerHTML = '<section class="support-admin-section">' +
+      '<h3 class="support-admin-section-title">Active projects</h3><div class="support-client-projects">' +
+      (projects.map((project) =>
+        '<article class="support-client-project"><h4>' + escapeText(project.title) + '</h4>' +
+        '<div class="support-admin-numbers">' + escapeText(project.stage || "Active") +
+        ' · ' + (project.openTasks || 0) + ' open tasks</div>' +
+        '<div class="support-progress" aria-label="' + Number(project.progress || 0) +
+        '% complete"><span style="--value:' + Number(project.progress || 0) +
+        '%"></span></div></article>').join("") || '<p>No active projects available.</p>') +
+      '</div></section><section class="support-admin-section">' +
+      '<h3 class="support-admin-section-title">Upcoming work &amp; task activity</h3>' +
+      '<div class="support-client-activity">' +
+      ((due.length ? due : active.slice(0,5)).map((task) =>
+        '<div><strong>' + escapeText(task.title) + '</strong><p>' +
+        escapeText(task.project || "Support") + ' · ' + escapeText(task.stage || "Open") +
+        (task.deadline ? ' · Due ' + escapeText(formatDate(task.deadline)) : '') +
+        '</p></div>').join("") || '<p>No pending task activity.</p>') +
+      '</div><button type="button" class="btn outline" data-client-show-tasks>View support tasks</button></section>';
+  };
+  clientOverviewPanel.addEventListener("click", (event) => {
+    if (event.target.closest("[data-client-show-tasks]")) activateSupportTab("tasks");
+  });
   // Support Admin sees all support-enabled ERP companies, with project/status rollups.
   let adminTaskIds = null;
   const adminPanel = document.createElement("section");
   adminPanel.className = "support-admin-center";
   adminPanel.hidden = true;
-  signedInShell?.prepend(adminPanel);
+  const dashboardView = supportPortal.querySelector('[data-support-view="dashboard"]');
+  dashboardView?.append(adminPanel);
 
   const renderAdminOverview = (overview) => {
     if (!overview?.isSupportAdmin) {
@@ -1200,13 +1240,46 @@ if (supportPortal) {
       ).join("") + '</section>'
     ).join("");
     adminPanel.hidden = false;
+    dashboardView?.classList.add("is-admin-dashboard");
+    const completed = tasks.filter((t) => normalizeTaskStatus(t.stage) === "completed").length;
+    const working = tasks.filter((t) => normalizeTaskStatus(t.stage) === "in-progress").length;
+    const blocked = tasks.filter((t) => normalizeTaskStatus(t.stage) === "blocked").length;
+    const opened = tasks.length - completed - working - blocked;
+    const percent = (n) => tasks.length ? (n * 100 / tasks.length).toFixed(1) + "%" : "0%";
+    const companyRows = companies.map((company) => {
+      const progress = company.totalTasks ? Math.round(company.completedTasks / company.totalTasks * 100) : 0;
+      return '<tr data-admin-company-row="' + escapeText(company.name) + '"><td><strong>' + escapeText(company.name) +
+        '</strong></td><td>' + company.projectCount + '</td><td>' + company.totalTasks +
+        '</td><td><span class="support-admin-progress"><i style="width:' + progress +
+        '%"></i></span> ' + progress + '%</td><td>' + company.openTasks + '</td><td>' +
+        company.completedTasks + '</td></tr>';
+    }).join("");
     adminPanel.innerHTML =
-      '<div class="support-admin-head"><div><h2>Support Admin Center</h2><p>All companies with support-enabled ERP users, their projects and live ERP task statuses.</p></div>' +
-      '<button type="button" class="btn primary" data-admin-notifications>Enable new-task alerts</button></div>' +
-      '<div class="support-admin-stats"><strong>' + companies.length + ' companies</strong><strong>' +
-      (overview.projects || []).length + ' projects</strong><strong>' + tasks.length + ' tasks</strong></div>' +
-      '<div class="support-admin-company-grid">' + (companyCards || '<p>No support-enabled customer companies found.</p>') + '</div>' +
-      '<h3>All support tasks</h3>' +
+      '<header class="support-admin-head"><div><span class="eyebrow">ABiT SUPPORT OPERATIONS</span>' +
+      '<h2>Support Admin Center</h2><p>Manage customer companies, ERP projects and support task activity.</p></div>' +
+      '<button type="button" class="btn primary" data-admin-notifications>Enable task alerts</button></header>' +
+      '<div class="support-admin-stats"><strong><span>Customer companies</span>' + companies.length +
+      '</strong><strong><span>Active projects</span>' + (overview.projects || []).length +
+      '</strong><strong><span>Total ERP tasks</span>' + tasks.length +
+      '</strong><strong><span>Open tasks</span>' + opened + '</strong></div>' +
+      '<div class="support-admin-grid">' +
+      '<section class="support-admin-section"><h3 class="support-admin-section-title">Companies overview</h3>' +
+      '<div class="support-admin-table-wrap"><table class="support-admin-customer-table"><thead><tr><th>Company</th><th>Projects</th><th>Tasks</th><th>Progress</th><th>Open</th><th>Done</th></tr></thead>' +
+      '<tbody>' + companyRows + '</tbody></table></div></section>' +
+      '<section class="support-admin-section"><h3 class="support-admin-section-title">Task status</h3>' +
+      '<div class="support-admin-status-panel"><div class="support-admin-donut" style="--done:' +
+      percent(completed) + ';--working:' + percent(working) + '"><span>' + tasks.length +
+      '<small>Total tasks</small></span></div>' +
+      '<div class="support-admin-status-list"><div><span>Open</span><b>' + opened +
+      '</b></div><div><span>In progress</span><b>' + working +
+      '</b></div><div><span>Completed</span><b>' + completed +
+      '</b></div><div><span>Blocked</span><b>' + blocked +
+      '</b></div></div></div></section></div>' +
+      '<section class="support-admin-section"><h3 class="support-admin-section-title">Customer projects</h3>' +
+      '<div class="support-admin-company-grid">' +
+      (companyCards || '<p>No support-enabled customer companies found.</p>') +
+      '</div></section>' +
+      '<section class="support-admin-section" style="margin-top:18px"><h3 class="support-admin-section-title">Recent support tasks</h3>' +
       '<div class="support-admin-filters"><select data-admin-company><option value="">All companies</option>' +
       companies.map((company) => '<option value="' + escapeText(company.name) + '">' + escapeText(company.name) + '</option>').join("") +
       '</select><select data-admin-status><option value="">All statuses</option>' +
@@ -1217,9 +1290,9 @@ if (supportPortal) {
         '" data-admin-task-status="' + escapeText(task.stage || "Open") + '"><td>' + escapeText(task.company || "") +
         '</td><td>' + escapeText(task.project || "") + '</td><td><button type="button" class="support-admin-task-link" data-admin-open-task="' +
         escapeText(task.erpTaskId || task.id) + '">' + escapeText(task.title) + '</button> <button type="button" class="support-admin-notify" data-admin-notify-task="' +
-        escapeText(task.erpTaskId || task.id) + '" title="Send instructions to ERP assigned users">Notify assignee</button></td><td>' +
+        escapeText(task.erpTaskId || task.id) + '" title="Send instructions to assigned ERP users">Notify assignee</button></td><td>' +
         escapeText(task.stage || "Open") + '</td><td>' + escapeText(formatDate(task.deadline) || "Not set") + '</td></tr>').join("") +
-      '</tbody></table></div><div class="support-admin-notice" role="status" data-admin-notice hidden></div>';
+      '</tbody></table></div><div class="support-admin-notice" role="status" data-admin-notice hidden></div></section>';
     if (incoming.length) {
       const message = incoming.length + ' new support task(s): ' + incoming.slice(0, 3).map((task) =>
         (task.company || "") + ' - ' + task.title).join("; ");
@@ -1283,6 +1356,7 @@ if (supportPortal) {
   });
   const renderSignedOut = () => {
     adminPanel.hidden = true;
+    dashboardView?.classList.remove("is-admin-dashboard");
     adminTaskIds = null;
     setSupportVisibility(false);
     if (userHeading) userHeading.textContent = "Sign in to view your workspace.";
@@ -1353,6 +1427,7 @@ if (supportPortal) {
     try {
       const overview = await apiJsonRequest("/api/support/overview", { auth: true });
       renderAdminOverview(overview);
+      renderClientOverview(overview);
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);
