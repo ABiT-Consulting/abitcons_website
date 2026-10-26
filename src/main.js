@@ -89,6 +89,17 @@ const apiJsonRequest = async (path, { method = "GET", payload = null, auth = fal
   }
 
   let { data, rawBody } = await parseApiResponse(response);
+  // Retry read-only support calls once on transient upstream outages.
+  // Never automatically retry password sign-in or task creation.
+  if (method === "GET" && [502, 503, 504].includes(response.status)) {
+    await new Promise(resolve => window.setTimeout(resolve, 350));
+    try {
+      response = await fetch(apiBaseUrl + path, requestOptions);
+      ({ data, rawBody } = await parseApiResponse(response));
+    } catch {
+      throw new Error("Support services are temporarily unreachable. Please retry.");
+    }
+  }
   if (shouldTryPhpApiFallback(path, response, rawBody)) {
     const fallbackPath = phpApiFallbackRoutes.get(path);
     response = await fetch(`${apiBaseUrl}${fallbackPath}`, requestOptions);
@@ -101,7 +112,16 @@ const apiJsonRequest = async (path, { method = "GET", payload = null, auth = fal
   }
 
   if (!response.ok) {
-    const error = new Error(data.error || "Request could not be completed.");
+    const rawError = typeof data.error === "string" ? data.error : "";
+    const message = /frappe\.exceptions\.PermissionError|frappe\.exceptions\.AuthenticationError/i.test(rawError)
+      ? "ERPNext refused the support account permission check. Please use your exact ERPNext username or ask your administrator to verify Support Admin access."
+      : rawError ||
+        (response.status === 429
+          ? "Too many sign-in attempts. Please try again after the ERPNext rate limit expires."
+          : response.status >= 500
+            ? "Temporary support service error (HTTP " + response.status + "). Please retry."
+            : "Request was rejected (HTTP " + response.status + ").");
+    const error = new Error(message);
     error.status = response.status;
     throw error;
   }

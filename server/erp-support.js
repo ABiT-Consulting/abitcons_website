@@ -67,8 +67,10 @@ export function createErpSupportService({ rootDir }) {
     Accept: "application/json",
   };
 
+  // Retry only read-only ERP requests on short-lived upstream outages.
+  // Login/password and task creation requests are never retried.
   const erpRequest = async (method, path, body = undefined, headers = {}) => {
-    const response = await fetch(baseUrl + path, {
+    const options = {
       method,
       headers: {
         ...adminHeaders,
@@ -76,10 +78,36 @@ export function createErpSupportService({ rootDir }) {
         ...headers,
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    });
-    return readJson(response);
+    };
+    for (let attempt = 0; attempt < (method === "GET" ? 2 : 1); attempt++) {
+      try {
+        const response = await fetch(baseUrl + path, {
+          ...options,
+          signal: AbortSignal.timeout(30000),
+        });
+        if (method === "GET" && attempt === 0 &&
+            [502, 503, 504].includes(response.status)) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          continue;
+        }
+        return await readJson(response);
+      } catch (error) {
+        const transient = !error?.status || [502, 503, 504].includes(error.status);
+        if (method !== "GET" || attempt !== 0 || !transient) {
+          if (!error?.status) {
+            const unavailable = new Error("ERPNext did not respond. Please try again.");
+            unavailable.status = 503;
+            throw unavailable;
+          }
+          throw error;
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+    const unavailable = new Error("ERPNext could not complete the request.");
+    unavailable.status = 503;
+    throw unavailable;
   };
-
   const erpList = async (doctype, { fields = ["name"], filters = [], orderBy = "", limit = 500, start = 0 } = {}) => {
     const query = new URLSearchParams({
       fields: JSON.stringify(fields),
@@ -103,8 +131,82 @@ export function createErpSupportService({ rootDir }) {
     }
     throw new Error("Support result limit reached; narrow the ERP dataset.");
   };
-  const validateMappedUser = async (erpUser) => {
-    const doc = (await erpRequest("GET", "/api/resource/User/" + encodeURIComponent(erpUser))).data;
+  // Frappe denies service-token access to its built-in Administrator User (403).
+  // For that *exact* principal only, read the User record through the session
+  // created by the successful ERPNext password login. Never grant a support
+  // role from the login name alone: custom_support_admin must still be enabled.
+  // Keep the ERP session cookie in process memory, bound to a hashed support
+  // token. It is never returned to the browser or written to SQLite.
+  const privilegedErpSessions = new Map();
+  const fetchVerifiedUser = async (erpUser, verifiedCookie = "") => {
+    const resource = "/api/resource/User/" + encodeURIComponent(erpUser);
+    try {
+      return (await erpRequest("GET", resource)).data;
+    } catch (error) {
+      if (erpUser !== "Administrator" && error?.status === 403) {
+        const denied = new Error("ERPNext denied permission to verify this account's support access. Ask your ERP administrator to check the support bridge API user's User read permission.");
+        denied.status = 403;
+        throw denied;
+      }
+      if (erpUser !== "Administrator" || error?.status !== 403) throw error;
+      if (!verifiedCookie) {
+        const unauthorized = new Error("ERPNext Administrator session is no longer available. Sign in again.");
+        unauthorized.status = 401;
+        throw unauthorized;
+      }
+      let response;
+      try {
+        response = await fetch(baseUrl + resource, {
+          headers: { Cookie: verifiedCookie, Accept: "application/json" },
+          signal: AbortSignal.timeout(15000),
+        });
+      } catch {
+        const unavailable = new Error("Unable to validate the ERPNext Administrator session.");
+        unavailable.status = 502;
+        throw unavailable;
+      }
+      if (response.status === 403) {
+        // Even an authenticated Administrator may be blocked from the User
+        // resource. Ask Frappe's read-only permission-checked method for
+        // the exact record and the actual Support Admin checkbox.
+        const query = new URLSearchParams({
+          doctype: "User",
+          filters: JSON.stringify({ name: "Administrator" }),
+          fieldname: JSON.stringify([
+            "name", "enabled", "username", "full_name", "email",
+            "custom_support_admin", "custom_support_portal_enabled",
+            "custom_support_customer",
+          ]),
+        });
+        try {
+          const fallback = await fetch(
+            baseUrl + "/api/method/frappe.client.get_value?" + query,
+            {
+              headers: { Cookie: verifiedCookie, Accept: "application/json" },
+              signal: AbortSignal.timeout(15000),
+            }
+          );
+          if (fallback.ok) {
+            const result = await readJson(fallback);
+            if (result.message?.name === "Administrator") return result.message;
+          }
+        } catch {
+          // If the ERP permissions deny both checks, do not grant access.
+        }
+      }
+      if (!response.ok) {
+        const denied = new Error(response.status === 401 || response.status === 403
+          ? "ERPNext did not allow reading the Administrator support role. Use a named ERPNext user whose Support Admin checkbox is enabled."
+          : "ERPNext user permissions could not be verified.");
+        denied.status = response.status === 401 ? 401 : response.status === 403 ? 403 : 502;
+        throw denied;
+      }
+      const data = await readJson(response);
+      return data.data;
+    }
+  };
+  const validateMappedUser = async (erpUser, verifiedCookie = "") => {
+    const doc = await fetchVerifiedUser(erpUser, verifiedCookie);
     const isSupportAdmin = Number(doc?.custom_support_admin || 0) === 1;
     if (!doc?.enabled || (!isSupportAdmin && Number(doc.custom_support_portal_enabled || 0) !== 1)) {
       const error = new Error("This ERP user is not enabled for the support portal.");
@@ -127,6 +229,38 @@ export function createErpSupportService({ rootDir }) {
     };
   };
 
+  // Frappe can accept the email ID while rejecting its short username.
+  // Resolve only an exact, unique enabled User.username, using server-side
+  // configured ERP credentials; never reveal that lookup to the browser.
+  // Password authentication still happens exclusively at ERPNext.
+  const resolveCanonicalLogin = async (input) => {
+    const supplied = trim(input);
+    if (!supplied || supplied.includes("@")) return supplied;
+    if (supplied.toLowerCase() === "administrator") return "Administrator";
+    try {
+      const records = await erpList("User", {
+        fields: ["name", "username", "enabled"],
+        filters: [["username", "=", supplied]],
+        limit: 2,
+      });
+      if (records.length === 1 &&
+          Number(records[0].enabled) === 1 &&
+          trim(records[0].username).toLowerCase() === supplied.toLowerCase()) {
+        return trim(records[0].name);
+      }
+    } catch (error) {
+      // Do not misreport an ERP outage as a wrong password, which could
+      // otherwise cause repeated login attempts and Frappe rate limiting.
+      if (!error?.status || error.status === 429 || error.status >= 500) {
+        const unavailable = new Error("ERPNext username lookup is temporarily unavailable. Use your ERPNext email or retry later.");
+        unavailable.status = 503;
+        throw unavailable;
+      }
+      // When lookup is denied but native ERPNext username login is enabled,
+      // leave the supplied username unchanged; ERPNext still checks password.
+    }
+    return supplied;
+  };
   const login = async (loginValue, password) => {
     const login = trim(loginValue);
     if (!login || !password) {
@@ -135,14 +269,24 @@ export function createErpSupportService({ rootDir }) {
       throw error;
     }
 
-    const form = new URLSearchParams({ usr: login, pwd: String(password) });
-    const response = await fetch(baseUrl + "/api/method/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-      body: form,
-      redirect: "manual",
-    });
-
+    const canonicalLogin = await resolveCanonicalLogin(login);
+    const form = new URLSearchParams({ usr: canonicalLogin, pwd: String(password) });
+    // Never automatically repeat the password POST. A temporary outage is
+    // different from a rejected password or missing Support Admin checkbox.
+    let response;
+    try {
+      response = await fetch(baseUrl + "/api/method/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body: form,
+        redirect: "manual",
+        signal: AbortSignal.timeout(20000),
+      });
+    } catch {
+      const unavailable = new Error("ERPNext sign-in service did not respond. Your password could not be checked; please retry.");
+      unavailable.status = 503;
+      throw unavailable;
+    }
     if (!response.ok) {
       // Keep authentication exclusively in ERPNext. Never allow a Support Admin
       // checkbox, display name or alias to bypass password verification.
@@ -171,22 +315,42 @@ export function createErpSupportService({ rootDir }) {
       throw error;
     }
 
-    const whoResponse = await fetch(baseUrl + "/api/method/frappe.auth.get_logged_user", {
-      headers: { Cookie: cookie, Accept: "application/json" },
-    });
-    const who = await readJson(whoResponse);
-    const erpUser = trim(who.message);
+    let who;
+    try {
+      const whoResponse = await fetch(baseUrl + "/api/method/frappe.auth.get_logged_user", {
+        headers: { Cookie: cookie, Accept: "application/json" },
+        signal: AbortSignal.timeout(20000),
+      });
+      who = await readJson(whoResponse);
+    } catch (error) {
+      const unavailable = new Error(error?.status === 403
+        ? "ERPNext accepted the sign-in request but would not verify its session. Please retry or contact your ERP administrator."
+        : "ERPNext session verification could not be completed. Please retry.");
+      unavailable.status = 503;
+      throw unavailable;
+    }    const erpUser = trim(who.message);
     if (!erpUser || erpUser === "Guest") {
       const error = new Error("ERP login could not resolve the user.");
       error.status = 401;
       throw error;
     }
 
-    const mapped = await validateMappedUser(erpUser);
+    const mapped = await validateMappedUser(erpUser, cookie);
     deleteExpired.run();
     const token = randomBytes(32).toString("base64url");
     const ttlHours = Math.max(1, Math.min(Number(process.env.SUPPORT_SESSION_TTL_HOURS || 8), 24));
     insertSession.run(hashToken(token), mapped.erpUser, mapped.login, mapped.fullName, mapped.customer, "+" + ttlHours + " hours");
+    if (mapped.erpUser === "Administrator") {
+      // Limit in-memory ERP session cookies to the verified support TTL.
+      const now = Date.now();
+      for (const [storedHash, info] of privilegedErpSessions) {
+        if (info.expiresAt <= now) privilegedErpSessions.delete(storedHash);
+      }
+      privilegedErpSessions.set(hashToken(token), {
+        cookie,
+        expiresAt: now + ttlHours * 3600000,
+      });
+    }
 
     return {
       sessionToken: token,
@@ -216,7 +380,19 @@ export function createErpSupportService({ rootDir }) {
       throw error;
     }
 
-    const current = await validateMappedUser(session.erp_user);
+    const header = String(request.headers.authorization || "");
+    const credential = header.match(/^Bearer\s+(.+)$/i);
+    const storedHash = credential ? hashToken(credential[1].trim()) : "";
+    const privilegedEntry = session.erp_user === "Administrator" && storedHash
+      ? privilegedErpSessions.get(storedHash)
+      : null;
+    if (privilegedEntry && privilegedEntry.expiresAt <= Date.now()) {
+      privilegedErpSessions.delete(storedHash);
+    }
+    const privilegedCookie = privilegedEntry && privilegedEntry.expiresAt > Date.now()
+      ? privilegedEntry.cookie
+      : "";
+    const current = await validateMappedUser(session.erp_user, privilegedCookie);
     if (current.customer !== session.customer) {
       const error = new Error("Your ERP support mapping has changed. Please sign in again.");
       error.status = 401;

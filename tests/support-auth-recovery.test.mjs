@@ -5,8 +5,8 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("support login retains ERPNext password verification, not support flag bypass", () => {
   const source = read("../server/erp-support.js");
-  assert.match(source, /const response = await fetch\(baseUrl \+ "\/api\/method\/login"/);
-  assert.match(source, /const mapped = await validateMappedUser\(erpUser\)/);
+  assert.match(source, /response = await fetch\(baseUrl \+ "\/api\/method\/login"/);
+  assert.match(source, /const mapped = await validateMappedUser\(erpUser, cookie\)/);
   assert.match(source, /checkbox does not set a password/);
 });
 test("password recovery URL uses configured ERPNext service, not a hardcoded password", () => {
