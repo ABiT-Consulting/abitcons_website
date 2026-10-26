@@ -1128,6 +1128,16 @@ section { padding: clamp(3.2rem, 5.5vw, 5.75rem) 0; position: relative; }
   margin: 0;
   font-size: 0.86rem;
 }
+.support-task-details summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.support-task-details[open] {
+  display: grid;
+  gap: 0.5rem;
+}
 .support-meta {
   display: flex;
   flex-wrap: wrap;

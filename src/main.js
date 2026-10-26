@@ -1,3 +1,4 @@
+import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -790,17 +791,12 @@ if (supportPortal) {
     if (signedInShell) signedInShell.hidden = !isSignedIn;
   };
 
-  const supportWorkspaceHash = (clientCode) =>
-    clientCode ? `#support-portal/${encodeURIComponent(clientCode)}` : "#support-portal";
-
   const syncSupportWorkspaceRoute = (user) => {
-    const clientCode = String(user?.clientCode || user?.company?.clientCode || user?.company?.code || "").trim();
-    const expectedHash = supportWorkspaceHash(clientCode);
-    const requestedCode = window.location.hash.startsWith("#support-portal/")
-      ? decodeURIComponent(window.location.hash.slice("#support-portal/".length)).trim()
-      : "";
-
-    if (clientCode && requestedCode.toLowerCase() !== clientCode.toLowerCase()) {
+    const clientCode = getSupportClientCode(user);
+    const expectedHash = supportWorkspaceHash(user);
+    const requestedCode = getRequestedSupportClientCode(window.location.hash);
+    if ((clientCode && requestedCode.toLowerCase() !== clientCode.toLowerCase()) ||
+        (!clientCode && window.location.hash.startsWith("#support-portal/"))) {
       window.history.replaceState(
         null,
         "",
@@ -919,12 +915,16 @@ if (supportPortal) {
         (task) => `<article class="support-item">
           <h4>${escapeText(task.title)}</h4>
           ${itemMeta([
-            ["Stage", task.stage],
+            ["Status", task.status || task.stage || task.state || "Unknown"],
+            (task.erpTaskId || task.name || task.id) ? ["ERP Task", task.erpTaskId || task.name || task.id] : null,
             task.project ? ["Project", task.project] : null,
             task.deadline ? ["Deadline", formatDate(task.deadline)] : null,
             ["Remaining", `${Number(task.remainingHours || 0).toFixed(1)}h`],
           ])}
-          ${task.description ? `<p>${escapeText(task.description)}</p>` : ""}
+          <details class="support-task-details">
+            <summary>View task details</summary>
+            ${task.description ? `<p>${escapeText(task.description)}</p>` : "<p>No additional details provided.</p>"}
+          </details>
           ${task.completedBy ? `<p>Completed by: ${escapeText(task.completedBy)}</p>` : ""}
           <p>Updated ${escapeText(formatDate(task.updatedAt) || "recently")}</p>
         </article>`
