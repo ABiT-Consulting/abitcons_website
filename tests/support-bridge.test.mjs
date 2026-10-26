@@ -85,6 +85,18 @@ test("rejects HTML upstream failures rather than returning a fake workspace", as
   assert.equal(response.status, 502);
 });
 
+test("rejects invalid JSON from upstream even when labelled application/json", async () => {
+  const response = makeResponse();
+  await proxySupportBridge(makeRequest("GET", null, "Bearer test-session"), response, "/api/support/overview", {
+    baseUrl: "https://bridge.example.test",
+    fetchImpl: async () => new Response("{invalid-json", {
+      status: 200, headers: { "content-type": "application/json" },
+    }),
+  });
+  assert.equal(response.status, 502);
+  assert.match(response.body, /invalid response/i);
+});
+
 test("ticket creation discards client and project overrides", async () => {
   const request = makeRequest("POST", {
     subject: "ERP task", message: "Check CHT data", priority: "2",

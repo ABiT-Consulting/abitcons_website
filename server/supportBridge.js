@@ -118,9 +118,12 @@ export async function proxySupportBridge(request, response, upstreamPath, {
     });
     const contentType = upstreamResponse.headers.get("content-type") || "";
     const responseBody = await upstreamResponse.text();
+    let parsedResponse;
+    try { parsedResponse = JSON.parse(responseBody); } catch { /* invalid JSON is rejected below */ }
     if (!contentType.toLowerCase().includes("application/json") ||
         responseBody.length > 2_000_000 ||
-        upstreamResponse.status < 200 || upstreamResponse.status > 499) {
+        upstreamResponse.status < 200 || upstreamResponse.status > 499 ||
+        !parsedResponse || typeof parsedResponse !== "object" || Array.isArray(parsedResponse)) {
       jsonError(response, 502, "Support portal bridge returned an invalid response.");
       return;
     }

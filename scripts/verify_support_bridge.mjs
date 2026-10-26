@@ -50,6 +50,20 @@ try {
   const overview = await request("/api/support-overview.php");
   verify(overview.response.status === 401 && typeof overview.data?.error === "string",
     "Support overview requires a bearer session");
+
+  // This must never create a task: even a forged company/project cannot bypass sign-in.
+  const unauthorizedCreate = await request("/api/support-ticket.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subject: "Unauthenticated probe (must be rejected)",
+      message: "No task should be created",
+      clientCode: "OTHER",
+      project: "PROJ-OTHER",
+    }),
+  });
+  verify(unauthorizedCreate.response.status === 401,
+    "Support task creation rejects unauthenticated client/project overrides");
 } catch (error) {
   console.error(`FAIL Support bridge production smoke: ${error.message}`);
   process.exitCode = 1;
