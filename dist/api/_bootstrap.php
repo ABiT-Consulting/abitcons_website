@@ -1307,11 +1307,17 @@ function api_bridge_proxy(string $path, string $method): void
 
     $responseBody = curl_exec($curl);
     $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-    $curlError = curl_error($curl);
+    $contentType = (string) curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
     curl_close($curl);
 
     if (!is_string($responseBody) || $status === 0) {
-        api_send_json(502, ['error' => $curlError ?: 'Support portal bridge is unavailable.']);
+        api_send_json(502, ['error' => 'Support portal bridge is unavailable.']);
+    }
+    // Never treat an upstream HTML error, redirect, or server failure as a valid API response.
+    if ($status < 200 || $status > 499 || strlen($responseBody) > 2000000 ||
+        stripos($contentType, 'application/json') === false ||
+        !is_array(json_decode($responseBody, true))) {
+        api_send_json(502, ['error' => 'Support portal bridge returned an invalid response.']);
     }
 
     http_response_code($status);

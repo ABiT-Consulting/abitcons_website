@@ -10,6 +10,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Validate support bridge contracts
+        run: npm test
       - name: Trigger cPanel deployment and wait
         shell: bash
         env:
@@ -351,3 +354,5 @@ jobs:
 
             sleep 3
           done
+      - name: Verify deployed support login bridge
+        run: node scripts/verify_support_bridge.mjs https://www.abitcons.com
