@@ -78,9 +78,43 @@ test("upstream authorization failure is preserved, not replaced with local accou
 
 test("rejects HTML upstream failures rather than returning a fake workspace", async () => {
   const response = makeResponse();
-  await proxySupportBridge(makeRequest("GET", null), response, "/api/support/overview", {
+  await proxySupportBridge(makeRequest("GET", null, "Bearer test-session"), response, "/api/support/overview", {
     baseUrl: "https://bridge.example.test",
     fetchImpl: async () => new Response("<html>not logged in</html>", { status: 200, headers: { "content-type": "text/html" } }),
   });
   assert.equal(response.status, 502);
+});
+
+test("ticket creation discards client and project overrides", async () => {
+  const request = makeRequest("POST", {
+    subject: "ERP task", message: "Check CHT data", priority: "2",
+    clientCode: "OTHER", company: "OTHER", project: "PROJ-OTHER",
+  }, "Bearer test-session");
+  const response = makeResponse();
+  await proxySupportBridge(request, response, "/api/support/tickets", {
+    baseUrl: "https://bridge.example.test",
+    fetchImpl: async (url, options) => {
+      assert.equal(url.pathname, "/api/support/tickets");
+      assert.equal(options.headers.Authorization, "Bearer test-session");
+      assert.deepEqual(JSON.parse(options.body.toString()), {
+        subject: "ERP task", message: "Check CHT data", priority: "2",
+      });
+      return new Response(JSON.stringify({ ticket: { name: "TASK-TEST" } }),
+        { status: 201, headers: { "content-type": "application/json" } });
+    },
+  });
+  assert.equal(response.status, 201);
+});
+
+test("unauthorized overview and ticket creation fail before reaching the bridge", async () => {
+  for (const [method, path, payload] of [
+    ["GET", "/api/support/overview", null],
+    ["POST", "/api/support/tickets", { subject: "x", message: "x" }],
+  ]) {
+    const response = makeResponse();
+    await proxySupportBridge(makeRequest(method, payload), response, path, {
+      fetchImpl: () => { throw new Error("Must not call upstream"); },
+    });
+    assert.equal(response.status, 401);
+  }
 });

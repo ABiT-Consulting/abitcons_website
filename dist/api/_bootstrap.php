@@ -1253,13 +1253,42 @@ function api_bridge_proxy(string $path, string $method): void
             }
         }
     }
-    if (preg_match('/^Bearer\s+\S+$/i', $authorization)) {
+    $hasBearer = preg_match('/^Bearer\s+\S{1,4096}$/i', $authorization);
+    if (in_array($path, ['/api/support/overview', '/api/support/tickets'], true) && !$hasBearer) {
+        api_send_json(401, ['error' => 'Please sign in to access the support portal.']);
+    }
+    if ($hasBearer) {
         $headers[] = 'Authorization: ' . $authorization;
     }
 
     $body = '';
     if ($method !== 'GET') {
-        $body = file_get_contents('php://input') ?: '';
+        $rawBody = file_get_contents('php://input') ?: '';
+        if (strlen($rawBody) > 65536) {
+            api_send_json(413, ['error' => 'Request is too large.']);
+        }
+        $input = json_decode($rawBody, true);
+        if (!is_array($input)) {
+            api_send_json(400, ['error' => 'A valid JSON object is required.']);
+        }
+        if ($path === '/api/signin') {
+            $body = json_encode([
+                'login' => api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? ''),
+                'password' => is_string($input['password'] ?? null) ? $input['password'] : '',
+            ]);
+        } elseif ($path === '/api/support/forgot-password') {
+            $body = json_encode([
+                'login' => api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? ''),
+            ]);
+        } else {
+            // ABITask derives company and ERP project from the bearer session.
+            // Never forward client-supplied company or ERP project overrides.
+            $body = json_encode([
+                'subject' => api_trim($input['subject'] ?? ''),
+                'message' => api_trim($input['message'] ?? ''),
+                'priority' => api_trim($input['priority'] ?? '1'),
+            ]);
+        }
         $headers[] = 'Content-Type: application/json';
     }
 

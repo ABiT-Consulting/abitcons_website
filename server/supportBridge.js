@@ -58,11 +58,56 @@ export async function proxySupportBridge(request, response, upstreamPath, {
   try {
     const headers = { Accept: "application/json" };
     const authorization = request.headers.authorization;
-    if (typeof authorization === "string" && /^Bearer\s+\S+$/i.test(authorization)) {
+    if (typeof authorization === "string" && /^Bearer\s+\S{1,4096}$/i.test(authorization)) {
       headers.Authorization = authorization;
     }
-    const body = request.method === "GET" ? undefined : await requestBody(request);
-    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (["/api/support/overview", "/api/support/tickets"].includes(upstreamPath) &&
+        !headers.Authorization) {
+      jsonError(response, 401, "Please sign in to access the support portal.");
+      return;
+    }
+    let body;
+    if (request.method !== "GET") {
+      const raw = await requestBody(request, 65_536);
+      let input;
+      try { input = JSON.parse(raw.toString("utf8")); } catch { /* validated below */ }
+      if (!input || typeof input !== "object" || Array.isArray(input)) {
+        jsonError(response, 400, "A valid JSON object is required.");
+        return;
+      }
+      const string = (value) => typeof value === "string" ? value.trim() : "";
+      let payload;
+      if (upstreamPath === "/api/signin") {
+        payload = {
+          login: string(input.login ?? input.username ?? input.email),
+          password: typeof input.password === "string" ? input.password : "",
+        };
+        if (!payload.login || !payload.password) {
+          jsonError(response, 422, "Username and password are required.");
+          return;
+        }
+      } else if (upstreamPath === "/api/support/forgot-password") {
+        payload = { login: string(input.login ?? input.username ?? input.email) };
+        if (!payload.login) {
+          jsonError(response, 422, "Enter your username or registered email first.");
+          return;
+        }
+      } else {
+        // The bridge resolves company and ERP project exclusively from the session.
+        // Discard caller-supplied clientCode, company and project overrides.
+        payload = {
+          subject: string(input.subject),
+          message: string(input.message),
+          priority: string(input.priority) || "1",
+        };
+        if (!payload.subject || !payload.message) {
+          jsonError(response, 422, "Ticket subject and details are required.");
+          return;
+        }
+      }
+      body = Buffer.from(JSON.stringify(payload));
+      headers["Content-Type"] = "application/json";
+    }
 
     const upstreamResponse = await fetchImpl(upstreamUrl, {
       method: request.method,
