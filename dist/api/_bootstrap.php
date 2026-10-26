@@ -1245,7 +1245,15 @@ function api_bridge_proxy(string $path, string $method): void
 
     $headers = ['Accept: application/json'];
     $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-    if ($authorization !== '') {
+    if ($authorization === '' && function_exists('getallheaders')) {
+        foreach (getallheaders() as $name => $value) {
+            if (strcasecmp((string) $name, 'Authorization') === 0 && is_string($value)) {
+                $authorization = $value;
+                break;
+            }
+        }
+    }
+    if (preg_match('/^Bearer\s+\S+$/i', $authorization)) {
         $headers[] = 'Authorization: ' . $authorization;
     }
 

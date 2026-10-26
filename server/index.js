@@ -4,6 +4,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { getSupportBridgeRoute, proxySupportBridge } from "./supportBridge.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -1305,6 +1306,11 @@ const server = createServer(async (request, response) => {
   const requestUrl = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
 
   try {
+    const supportBridgePath = getSupportBridgeRoute(requestUrl.pathname, request.method);
+    if (supportBridgePath) {
+      await proxySupportBridge(request, response, supportBridgePath);
+      return;
+    }
     if (requestUrl.pathname === "/api/health" && request.method === "GET") {
       sendJson(response, 200, { ok: true });
       return;

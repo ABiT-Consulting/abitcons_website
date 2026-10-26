@@ -794,7 +794,7 @@ if (supportPortal) {
     clientCode ? `#support-portal/${encodeURIComponent(clientCode)}` : "#support-portal";
 
   const syncSupportWorkspaceRoute = (user) => {
-    const clientCode = String(user?.clientCode || "").trim();
+    const clientCode = String(user?.clientCode || user?.company?.clientCode || user?.company?.code || "").trim();
     const expectedHash = supportWorkspaceHash(clientCode);
     const requestedCode = window.location.hash.startsWith("#support-portal/")
       ? decodeURIComponent(window.location.hash.slice("#support-portal/".length)).trim()
@@ -996,7 +996,7 @@ if (supportPortal) {
     }
 
     try {
-      const overview = await apiJsonRequest("/api/support/overview", { auth: true });
+      const overview = await apiJsonRequest("/api/support-overview.php", { auth: true });
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);
@@ -1036,7 +1036,7 @@ if (supportPortal) {
       if (submitButton) submitButton.disabled = true;
       setAuthFeedback("");
       setAuthStatus("Signing in...");
-      const { user } = await apiJsonRequest("/api/signin", {
+      const { user } = await apiJsonRequest("/api/signin.php", {
         method: "POST",
         payload: { login, password },
       });
@@ -1124,7 +1124,7 @@ if (supportPortal) {
       forgotPasswordButton.disabled = true;
       setAuthFeedback("");
       setAuthStatus("Sending recovery instructions...");
-      const { message } = await apiJsonRequest("/api/support/forgot-password", {
+      const { message } = await apiJsonRequest("/api/support-forgot-password.php", {
         method: "POST",
         payload: { login },
       });
@@ -1169,7 +1169,7 @@ if (supportPortal) {
     try {
       if (submitButton) submitButton.disabled = true;
       setAlert("Creating support ticket...");
-      await apiJsonRequest("/api/support/tickets", {
+      await apiJsonRequest("/api/support-ticket.php", {
         method: "POST",
         payload,
         auth: true,
