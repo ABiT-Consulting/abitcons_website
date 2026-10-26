@@ -1,4 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -34,7 +35,10 @@ const readStoredAuthUser = () => {
   }
 };
 
-const getStoredAuthToken = () => readStoredAuthUser()?.sessionToken || "";
+const readStoredSupportUser = () => loadSupportUser(localStorage);
+const getStoredAuthToken = (path) => (path.includes("support-") || path.startsWith("/api/support/"))
+  ? readStoredSupportUser()?.sessionToken || ""
+  : readStoredAuthUser()?.sessionToken || "";
 
 const parseApiResponse = async (response) => {
   const contentType = response.headers.get("content-type") || "";
@@ -67,7 +71,7 @@ const shouldTryPhpApiFallback = (path, response, rawBody) => {
 const apiJsonRequest = async (path, { method = "GET", payload = null, auth = false } = {}) => {
   const headers = { "Content-Type": "application/json" };
   if (auth) {
-    const token = getStoredAuthToken();
+    const token = getStoredAuthToken(path);
     if (!token) {
       throw new Error("Please sign in to continue.");
     }
@@ -265,7 +269,7 @@ const authNavLinks = {
   support: Array.from(document.querySelectorAll('[data-auth-link="support"]')),
 };
 
-const setAuthNavigation = (user = readStoredAuthUser()) => {
+const setAuthNavigation = (user = readStoredAuthUser() || readStoredSupportUser()) => {
   const isSignedIn = Boolean(user?.sessionToken);
   authNavLinks.signin.forEach((link) => {
     link.hidden = isSignedIn;
@@ -424,6 +428,7 @@ if (authPanel) {
       }
     }
 
+    setAuthNavigation();
     window.dispatchEvent(new CustomEvent("abit-auth-change", { detail: user || null }));
   };
 
@@ -777,12 +782,8 @@ if (supportPortal) {
   };
 
   const persistSupportUser = (user) => {
-    if (user?.sessionToken) {
-      localStorage.setItem(authStorageKey, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(authStorageKey);
-    }
-    setAuthNavigation(user);
+    saveSupportUser(localStorage, user);
+    setAuthNavigation();
     window.dispatchEvent(new CustomEvent("abit-auth-change", { detail: user || null }));
   };
 
@@ -957,7 +958,7 @@ if (supportPortal) {
 
   const startSupportRefresh = () => {
     clearSupportRefresh();
-    const user = readStoredAuthUser();
+    const user = readStoredSupportUser();
     if (!user?.sessionToken) {
       return;
     }
@@ -970,7 +971,7 @@ if (supportPortal) {
   };
 
   const loadSupportOverview = async ({ silent = false } = {}) => {
-    const user = readStoredAuthUser();
+    const user = readStoredSupportUser();
     if (!user?.sessionToken) {
       clearSupportRefresh();
       renderSignedOut();
@@ -1148,7 +1149,7 @@ if (supportPortal) {
 
   ticketForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const user = readStoredAuthUser();
+    const user = readStoredSupportUser();
     if (!user?.sessionToken) {
       setAlert("Please sign in before creating a support ticket.", true);
       return;
@@ -1197,7 +1198,7 @@ if (supportPortal) {
   });
 
   window.addEventListener("hashchange", () => {
-    const user = readStoredAuthUser();
+    const user = readStoredSupportUser();
     if (user?.sessionToken) {
       syncSupportWorkspaceRoute(user);
     } else if (isDedicatedSupportHost && !window.location.hash.startsWith("#support-portal")) {
