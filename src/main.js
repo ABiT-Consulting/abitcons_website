@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -998,6 +998,7 @@ if (supportPortal) {
 
     try {
       const overview = await apiJsonRequest("/api/support-overview.php", { auth: true });
+      if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);
@@ -1005,6 +1006,7 @@ if (supportPortal) {
       const updated = formatSyncTime(overview.summary?.lastUpdated);
       setAlert(`Workspace synced${updated ? ` ${updated}` : ""}.`);
     } catch (error) {
+      if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
       const message =
         error instanceof Error ? error.message : "Support workspace could not be loaded.";
       setAlert(message, true);

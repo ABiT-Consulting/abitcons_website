@@ -35,3 +35,9 @@ export function persistSupportUser(storage, user) {
     storage.removeItem(supportSessionKey);
   }
 }
+
+// Ignore delayed network results from an older support sign-in after a user
+// signs out or changes accounts; never render the previous client workspace.
+export function isCurrentSupportSession(expected, current) {
+  return Boolean(expected?.sessionToken && expected.sessionToken === current?.sessionToken);
+}

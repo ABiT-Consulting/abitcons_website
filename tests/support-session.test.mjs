@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -36,4 +36,17 @@ test("invalid stored support JSON is cleared safely", () => {
   const store = storage({ "abit-support-auth-user": "{broken" });
   assert.equal(readStoredSupportUser(store), null);
   assert.equal(store.getItem("abit-support-auth-user"), null);
+});
+
+test("delayed support responses cannot replace or log out a newer company session", () => {
+  const cht = { sessionToken: "cht-token", login: "umar", clientCode: "CHT" };
+  const other = { sessionToken: "other-token", login: "other", clientCode: "OTHER" };
+  const store = storage();
+  persistSupportUser(store, cht);
+  assert.equal(isCurrentSupportSession(cht, readStoredSupportUser(store)), true);
+  persistSupportUser(store, other);
+  assert.equal(isCurrentSupportSession(cht, readStoredSupportUser(store)), false);
+  assert.equal(isCurrentSupportSession(other, readStoredSupportUser(store)), true);
+  persistSupportUser(store, null);
+  assert.equal(isCurrentSupportSession(other, readStoredSupportUser(store)), false);
 });
