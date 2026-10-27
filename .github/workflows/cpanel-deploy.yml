@@ -1,9 +1,8 @@
-name: Deploy to cPanel
+name: Deploy to cPanel (manual recovery)
 
+# Automatic production releases run in Azure DevOps pipeline ABITCONS_WEBSITE.
+# GitHub Actions remains available as a manual fallback after billing is resolved.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch: {}
 
 jobs:
