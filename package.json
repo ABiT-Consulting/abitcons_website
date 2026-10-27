@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/support-bridge.test.mjs tests/support-workspace.test.mjs tests/support-php-contract.test.mjs tests/support-session.test.mjs tests/deploy-cpanel.test.mjs",
+    "test": "node --test tests/support-bridge.test.mjs tests/support-workspace.test.mjs tests/support-php-contract.test.mjs tests/support-session.test.mjs tests/support-overview.test.mjs tests/deploy-cpanel.test.mjs",
     "verify:support:live": "node scripts/verify_support_bridge.mjs",
     "deploy:cpanel:dev02": "node scripts/deploy_cpanel_dev02.mjs",
     "generate:seo": "node scripts/generate_seo_pages.mjs",

@@ -1,5 +1,6 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
 import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, createSupportWorkspaceIdentityTracker, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
+import { isValidSupportOverview } from "./supportOverview.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -1005,7 +1006,7 @@ if (supportPortal) {
       userCopy.textContent = `Signed in as ${user.login || user.email}. Your updates are synced securely.`;
     }
     setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
-    setFormDisabled(false);
+    setFormDisabled(true);
     if (!silent) {
       setAlert("Loading support workspace...");
     }
@@ -1013,16 +1014,25 @@ if (supportPortal) {
     try {
       const overview = await apiJsonRequest("/api/support-overview.php", { auth: true });
       if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
+      if (!isValidSupportOverview(overview, user)) {
+        throw new Error("Support system returned an incomplete or mismatched workspace.");
+      }
       renderMetrics(overview.summary);
       renderTickets(overview.tickets);
       renderProjects(overview.projects);
       renderTasks(overview.tasks);
+      setFormDisabled(false);
       const updated = formatSyncTime(overview.summary?.lastUpdated);
       setAlert(`Workspace synced${updated ? ` ${updated}` : ""}.`);
     } catch (error) {
       if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
       const message =
         error instanceof Error ? error.message : "Support workspace could not be loaded.";
+      renderMetrics();
+      renderTickets([]);
+      renderProjects([]);
+      renderTasks([]);
+      setFormDisabled(true);
       setAlert(message, true);
       if (shouldEndSupportSession(error?.status)) {
         persistSupportUser(null);
