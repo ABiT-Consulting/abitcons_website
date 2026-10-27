@@ -63,6 +63,27 @@ The PHP support endpoints in `dist/api/` are deployed on the website's cPanel
 host. Updating code on Dev-02 or pushing to GitHub does not by itself publish
 these PHP files: confirm successful cPanel deployment before live testing.
 
+Azure DevOps `Common / ABITCONS_WEBSITE` (pipeline ID `168`) now runs CI and
+production cPanel Git deployment on each `main` push. Its hosted Ubuntu
+runner avoids the obsolete Dev-02 agent's `NodeTool@0` runtime crash. CI runs
+`npm ci`, `npm test`, `npm run build`, and verifies the generated `dist/` exactly
+matches the committed files used by `.cpanel.yml`. If this check fails, run
+`npm run build` on Dev-02 and commit the generated `dist/` together with source.
+
+Before production deployment, set `CPANEL_HOST`, `CPANEL_USER`,
+`CPANEL_REPO_ROOT` and **secret** `CPANEL_TOKEN` in Azure DevOps > Common >
+Pipelines > ABITCONS_WEBSITE > Edit > Variables; optionally set `CPANEL_PORT`
+(default 2083). Restrict access to the release pipeline and do not commit or
+print credentials. The deploy stage fails closed if variables are absent,
+checks the cPanel Git repository is this website, verifies the deployed commit,
+and runs the public support API smoke test. A successful build artifact alone
+**does not** mean the production website has been deployed.
+
+The original push-triggered `.github/workflows/cpanel-deploy.yml` remains
+unchanged because Dev-02's Git credential cannot modify GitHub Actions files
+without the `workflow` scope. GitHub will continue to show billing-blocked
+runs until an administrator disables that workflow or makes it manual-only.
+Azure DevOps is the intended primary production release pipeline.
 Standard deployment uses `.github/workflows/cpanel-deploy.yml`. If GitHub Actions
 cannot start (e.g. organization billing issue), an authorized operator can
 configure `CPANEL_HOST`, `CPANEL_USER`, `CPANEL_TOKEN`, and `CPANEL_REPO_ROOT`

@@ -1,60 +1,84 @@
+# Azure DevOps is the primary CI/CD runner while GitHub Actions billing is locked.
+# Pipeline: Common / ABITCONS_WEBSITE (connected to ABiT-Consulting/abitcons_website).
+# Configure CPANEL_HOST, CPANEL_USER, CPANEL_TOKEN (secret), and
+# CPANEL_REPO_ROOT as pipeline variables in Azure DevOps. Never put values here.
 trigger:
   branches:
     include:
-      - '*'
+      - main
 
 pr:
   branches:
     include:
       - main
-      - master
 
 pool:
-  name: 'Default'   # uses your dev server's default self-hosted agent
+  vmImage: ubuntu-latest
 
-variables:
-  node_version: '20.x'
-  npm_config_cache: $(Pipeline.Workspace)/.npm
-  run_selenium_tests: 'false'
+stages:
+  - stage: Validate
+    displayName: Test and package website
+    jobs:
+      - job: build
+        displayName: Build and verify tracked cPanel payload
+        steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 0
 
-steps:
-  - task: NodeTool@0
-    inputs:
-      versionSpec: $(node_version)
-    displayName: Install Node.js
+          # Avoid NodeTool@0 on legacy self-hosted agents: its task-lib crashes
+          # with "crypto.randomUUID is not a function" before the build starts.
+          - bash: |
+              set -euo pipefail
+              node --version
+              npm --version
+              node -e "if (Number(process.versions.node.split('.')[0]) < 20) process.exit(1)"
+              npm ci
+              npm test
+              # Keep reproducible builds even when the calendar date changes.
+              export SEO_LASTMOD="$(awk -F'[<>]' '/<lastmod>/{print $3; exit}' public/sitemap.xml)"
+              [[ "$SEO_LASTMOD" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+              npm run build
 
-  - task: Cache@2
-    inputs:
-      key: 'npm | "$(Agent.OS)" | package-lock.json'
-      restoreKeys: |
-        npm | "$(Agent.OS)"
-      path: $(npm_config_cache)
-    displayName: Cache npm
+              # cPanel's .cpanel.yml publishes the COMMITTED dist/ files, not
+              # this build artifact. Refuse stale/dist-inconsistent releases.
+              git diff --exit-code -- dist
+              if [ -n "$(git ls-files --others --exclude-standard -- dist)" ]; then
+                echo "Untracked dist files detected. Rebuild and commit dist/ on main."
+                exit 1
+              fi
+              test -f dist/index.html
+              test -f dist/api/signin.php
+              test -f dist/api/support-overview.php
+            displayName: Install, test, build, verify cPanel payload
 
-  - script: npm ci
-    displayName: Install dependencies
-    env:
-      npm_config_cache: $(npm_config_cache)
+          - publish: $(Build.SourcesDirectory)/dist
+            artifact: website-dist
+            displayName: Publish tested website artifact
 
-  - script: npm run build
-    displayName: Build
+  - stage: DeployProduction
+    displayName: Deploy GitHub main to cPanel
+    dependsOn: Validate
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: deploy
+        displayName: Authorized cPanel Git deployment
+        steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 0
 
-  - script: npm run test:selenium
-    displayName: Selenium tests
-    condition: and(succeeded(), eq(variables.run_selenium_tests, 'true'))
-
-  - task: ArchiveFiles@2
-    inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)/dist'
-      includeRootFolder: false
-      archiveType: 'zip'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/web-dist.zip'
-      replaceExistingArchive: true
-    displayName: Create dist zip
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)/web-dist.zip'
-      ArtifactName: web-dist
-      publishLocation: Container
-    displayName: Publish artifact
+          - bash: |
+              set -euo pipefail
+              node scripts/deploy_cpanel_azure.mjs
+            displayName: Deploy verified commit and smoke-test live support bridge
+            env:
+              BUILD_DEFINITIONNAME: $(Build.DefinitionName)
+              BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+              BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+              BUILD_SOURCEVERSION: $(Build.SourceVersion)
+              CPANEL_HOST: $(CPANEL_HOST)
+              CPANEL_PORT: $(CPANEL_PORT)
+              CPANEL_USER: $(CPANEL_USER)
+              CPANEL_TOKEN: $(CPANEL_TOKEN)
+              CPANEL_REPO_ROOT: $(CPANEL_REPO_ROOT)
