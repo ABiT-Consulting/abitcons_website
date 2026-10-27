@@ -67,7 +67,8 @@ Azure DevOps `Common / ABITCONS_WEBSITE` (pipeline ID `168`) now runs CI and
 production cPanel Git deployment on each `main` push. Its hosted Ubuntu
 runner avoids the obsolete Dev-02 agent's `NodeTool@0` runtime crash. CI runs
 `npm ci`, `npm test`, `npm run build`, and verifies the generated `dist/` exactly
-matches the committed files used by `.cpanel.yml`. If this check fails, run
+matches the committed files used by `.cpanel.yml` (ignoring host-specific
+line endings). If this check fails, run
 `npm run build` on Dev-02 and commit the generated `dist/` together with source.
 
 Before production deployment, set `CPANEL_HOST`, `CPANEL_USER`,

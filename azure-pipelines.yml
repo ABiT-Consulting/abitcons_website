@@ -42,7 +42,7 @@ stages:
 
               # cPanel's .cpanel.yml publishes the COMMITTED dist/ files, not
               # this build artifact. Refuse stale/dist-inconsistent releases.
-              git diff --exit-code -- dist
+              git diff --ignore-space-at-eol --exit-code -- dist
               if [ -n "$(git ls-files --others --exclude-standard -- dist)" ]; then
                 echo "Untracked dist files detected. Rebuild and commit dist/ on main."
                 exit 1

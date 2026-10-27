@@ -65,7 +65,7 @@ test("Azure DevOps runs tests, validates committed cPanel payload and deploys on
   const deploy = readFileSync(new URL("../scripts/deploy_cpanel_azure.mjs", import.meta.url), "utf8");
   assert.match(yaml, /vmImage:\s*ubuntu-latest/);
   assert.match(yaml, /npm ci[\s\S]*npm test[\s\S]*npm run build/);
-  assert.match(yaml, /git diff --exit-code -- dist/);
+  assert.match(yaml, /git diff --ignore-space-at-eol --exit-code -- dist/);
   assert.match(yaml, /DeployProduction[\s\S]*refs\/heads\/main/);
   assert.match(yaml, /deploy_cpanel_azure\.mjs/);
   assert.match(yaml, /CPANEL_TOKEN:\s*\$\(CPANEL_TOKEN\)/);
