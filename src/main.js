@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -1012,10 +1012,10 @@ if (supportPortal) {
       const message =
         error instanceof Error ? error.message : "Support workspace could not be loaded.";
       setAlert(message, true);
-      if (error?.status === 401) {
+      if (shouldEndSupportSession(error?.status)) {
         persistSupportUser(null);
         renderSignedOut();
-        setAuthFeedback("Your session expired. Sign in again.", true);
+        setAuthFeedback("Your support access has expired or been revoked. Sign in again.", true);
       }
     } finally {
       isSupportLoading = false;
@@ -1191,6 +1191,13 @@ if (supportPortal) {
       await loadSupportOverview();
     } catch (error) {
       if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
+      if (shouldEndSupportSession(error?.status)) {
+        persistSupportUser(null);
+        clearSupportRefresh();
+        renderSignedOut();
+        setAuthFeedback("Your support access has expired or been revoked. Sign in again.", true);
+        return;
+      }
       setAlert(error instanceof Error ? error.message : "Support ticket could not be created.", true);
     } finally {
       if (submitButton) submitButton.disabled = false;

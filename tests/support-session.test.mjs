@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -68,4 +68,11 @@ test("outdated support sign-in responses are discarded after sign-out or cross-t
   guard.invalidate(); // Sign-out and sign-in can happen before response arrives.
   guard.invalidate();
   assert.equal(guard.isCurrent(replacementLogin), false);
+});
+
+test("revoked or expired ABITask access must clear the visible support workspace", () => {
+  assert.equal(shouldEndSupportSession(401), true);
+  assert.equal(shouldEndSupportSession(403), true);
+  assert.equal(shouldEndSupportSession(422), false);
+  assert.equal(shouldEndSupportSession(502), false);
 });

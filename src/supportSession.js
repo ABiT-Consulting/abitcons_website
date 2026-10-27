@@ -42,6 +42,9 @@ export function isSupportSessionStorageEvent(key) {
   return key === supportSessionKey;
 }
 
+export function shouldEndSupportSession(status) {
+  return status === 401 || status === 403;
+}
 export function isCurrentSupportSession(expected, current) {
   return Boolean(expected?.sessionToken && expected.sessionToken === current?.sessionToken);
 }
