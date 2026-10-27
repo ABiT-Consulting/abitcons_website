@@ -55,6 +55,20 @@ export function isCurrentSupportSession(expected, current) {
     getSupportClientCode(expected).toLowerCase() === getSupportClientCode(current).toLowerCase());
 }
 
+// The workspace may still contain another company's task data while a new
+// session request is pending or fails. Clear it immediately on identity change.
+export function createSupportWorkspaceIdentityTracker() {
+  let displayedSession = null;
+  return {
+    hasChanged(current) {
+      const changed = !isCurrentSupportSession(displayedSession, current);
+      displayedSession = isScopedSupportUser(current) ? current : null;
+      return changed;
+    },
+    reset() { displayedSession = null; },
+  };
+}
+
 // Track a session's lifetime, including sign-out followed by sign-in, so late
 // login responses cannot silently restore an older company's workspace.
 export function createSupportSessionGuard() {

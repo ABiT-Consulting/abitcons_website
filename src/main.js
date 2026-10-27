@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, createSupportWorkspaceIdentityTracker, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -717,6 +717,7 @@ if (supportPortal) {
   let isSupportLoading = false;
   let queuedSupportRefresh = false;
   const supportSessionGuard = createSupportSessionGuard();
+  const workspaceIdentityTracker = createSupportWorkspaceIdentityTracker();
 
   const sanitizePortalText = (value) =>
     String(value ?? "")
@@ -936,6 +937,7 @@ if (supportPortal) {
   };
 
   const renderSignedOut = () => {
+    workspaceIdentityTracker.reset();
     setSupportVisibility(false);
     if (userHeading) userHeading.textContent = "Sign in to view your workspace.";
     if (userCopy) {
@@ -978,6 +980,16 @@ if (supportPortal) {
       clearSupportRefresh();
       renderSignedOut();
       return;
+    }
+
+    // Never keep the previous company's tickets, projects or tasks visible
+    // during an account switch, even if the new overview request fails.
+    if (workspaceIdentityTracker.hasChanged(user)) {
+      renderMetrics();
+      renderTickets([]);
+      renderProjects([]);
+      renderTasks([]);
+      setFormDisabled(true);
     }
 
     if (isSupportLoading) {

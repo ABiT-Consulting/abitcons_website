@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession, isScopedSupportUser } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, createSupportWorkspaceIdentityTracker, shouldEndSupportSession, isScopedSupportUser } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -96,4 +96,17 @@ test("a response for a different company is rejected even if the token matches",
   const other = { sessionToken: "shared-token", clientCode: "OTHER" };
   assert.equal(isCurrentSupportSession(cht, other), false);
   assert.equal(isCurrentSupportSession(cht, { ...cht, clientCode: "cht" }), true);
+});
+
+test("a changed ABITask account clears previously rendered company data before its next fetch", () => {
+  const tracker = createSupportWorkspaceIdentityTracker();
+  const cht = { sessionToken: "cht-token", clientCode: "CHT" };
+  const other = { sessionToken: "other-token", clientCode: "OTHER" };
+  assert.equal(tracker.hasChanged(cht), true); // First account loaded.
+  assert.equal(tracker.hasChanged({ ...cht }), false); // Background refresh is safe.
+  assert.equal(tracker.hasChanged(other), true); // Clear CHT data immediately.
+  assert.equal(tracker.hasChanged(other), false);
+  assert.equal(tracker.hasChanged({ ...other, sessionToken: "renewed" }), true);
+  tracker.reset(); // Sign-out wipes the scope.
+  assert.equal(tracker.hasChanged(cht), true);
 });
