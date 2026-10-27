@@ -54,3 +54,25 @@ to `http://127.0.0.1:3000`.
 npm run build
 npm run start
 ```
+
+## ABITask support portal deployment
+
+The support login, workspace overview, task listing and task creation must use the
+ABITask bridge (`ABIT_TASK_PORTAL_BRIDGE_URL`, default `https://abitask.abit.ai`).
+The PHP support endpoints in `dist/api/` are deployed on the website's cPanel
+host. Updating code on Dev-02 or pushing to GitHub does not by itself publish
+these PHP files: confirm successful cPanel deployment before live testing.
+
+Standard deployment uses `.github/workflows/cpanel-deploy.yml`. If GitHub Actions
+cannot start (e.g. organization billing issue), an authorized operator can
+configure `CPANEL_HOST`, `CPANEL_USER`, `CPANEL_TOKEN`, and `CPANEL_REPO_ROOT`
+**in the Dev-02 process environment** and run `npm run deploy:cpanel:dev02`.
+Optional: `CPANEL_PORT` (default 2083). This fallback only deploys a clean,
+pushed `main` branch after verifying the cPanel repository binding, and runs
+a credential-free live support smoke test. Never commit hosting credentials.
+
+Live authenticated acceptance (requires a valid ABITask test account) should
+verify the user-to-client mapping, `#support-portal/CHT`, the ERPNext tasks and
+statuses for project `PROJ-0015`, and a new ERP task created and shown back
+in the same support workspace. Do not claim these tests passed based on the
+credential-free smoke check alone.
