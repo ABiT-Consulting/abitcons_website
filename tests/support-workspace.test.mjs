@@ -16,3 +16,13 @@ test("never derive client scope from a user-controllable URL", () => {
   assert.equal(getRequestedSupportClientCode("#support-portal/%xx"),"");
   assert.equal(getRequestedSupportClientCode("#support-portal/OTHER"),"OTHER");
 });
+
+test("conflicting or malformed ABITask identity codes never select a tenant", () => {
+  assert.equal(getSupportClientCode({ clientCode: "CHT", companyCode: "OTHER" }), "");
+  assert.equal(getSupportClientCode({ clientCode: "CHT", company: { clientCode: "OTHER" } }), "");
+  assert.equal(getSupportClientCode({ company: { code: "CHT", clientCode: "OTHER" } }), "");
+  assert.equal(getSupportClientCode({ clientCode: "../OTHER", company: { name: "CHT" } }), "");
+  assert.equal(getSupportClientCode({ clientCode: "CHT", companyCode: "cht", company: { code: "CHT" } }), "CHT");
+  assert.equal(getSupportClientCode({ companyCode: "CHT", company: { name: "Cloud Taktiks" } }), "CHT");
+  assert.equal(supportWorkspaceHash({ clientCode: "CHT", company: { code: "OTHER" } }), "#support-portal");
+});
