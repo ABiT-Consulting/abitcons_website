@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -49,4 +49,10 @@ test("delayed support responses cannot replace or log out a newer company sessio
   assert.equal(isCurrentSupportSession(other, readStoredSupportUser(store)), true);
   persistSupportUser(store, null);
   assert.equal(isCurrentSupportSession(other, readStoredSupportUser(store)), false);
+});
+
+test("only support account changes trigger the cross-tab workspace reset", () => {
+  assert.equal(isSupportSessionStorageEvent("abit-support-auth-user"), true);
+  assert.equal(isSupportSessionStorageEvent("abit-auth-user"), false);
+  assert.equal(isSupportSessionStorageEvent(null), false);
 });

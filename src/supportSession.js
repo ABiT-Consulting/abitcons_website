@@ -38,6 +38,10 @@ export function persistSupportUser(storage, user) {
 
 // Ignore delayed network results from an older support sign-in after a user
 // signs out or changes accounts; never render the previous client workspace.
+export function isSupportSessionStorageEvent(key) {
+  return key === supportSessionKey;
+}
+
 export function isCurrentSupportSession(expected, current) {
   return Boolean(expected?.sessionToken && expected.sessionToken === current?.sessionToken);
 }

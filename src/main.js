@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -1194,6 +1194,15 @@ if (supportPortal) {
     setAuthFeedback("You have been signed out.");
   });
 
+  // A support sign-in or sign-out in another tab must immediately clear any
+  // previously rendered company data before the new session is loaded.
+  window.addEventListener("storage", (event) => {
+    if (!isSupportSessionStorageEvent(event.key)) return;
+    clearSupportRefresh();
+    renderSignedOut();
+    loadSupportOverview();
+    startSupportRefresh();
+  });
   window.addEventListener("abit-auth-change", () => {
     loadSupportOverview();
     startSupportRefresh();
