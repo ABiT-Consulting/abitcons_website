@@ -45,6 +45,20 @@ test("a mixed-company ticket, project, or ERP task blocks the entire workspace",
   }
 });
 
+test("conflicting company-code aliases cannot mask a cross-company record", () => {
+  const contradiction = { clientCode: "CHT", companyCode: "OTHER", company: { code: "CHT" } };
+  assert.equal(isValidSupportOverview({ ...valid(), ...contradiction }, user), false);
+  assert.equal(isValidSupportOverview({ ...valid(), clientCode: "CHT", company: { clientCode: "OTHER" } }, user), false);
+  for (const collection of ["tickets", "projects", "tasks"]) {
+    assert.equal(isValidSupportOverview({ ...valid(), [collection]: [contradiction] }, user), false,
+      `${collection} must reject contradictory company codes`);
+    assert.equal(isValidSupportOverview({ ...valid(), [collection]: [{
+      clientCode: "CHT", company: { clientCode: "CHT", code: "OTHER" },
+    }] }, user), false, `${collection} must check nested company aliases`);
+  }
+  assert.equal(isValidSupportOverview({ ...valid(), clientCode: "CHT", companyCode: "cht",
+    company: { code: "CHT", clientCode: "cht" } }, user), true);
+});
 test("legacy records without client metadata still render, but malformed records do not", () => {
   assert.equal(isValidSupportOverview({
     ...valid(),

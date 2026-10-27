@@ -5,10 +5,12 @@ import { getSupportClientCode } from "./supportWorkspace.js";
 // boundary for accidentally mixed tenant records returned by the bridge.
 function matchesDeclaredClient(record, client) {
   if (!record || typeof record !== "object" || Array.isArray(record)) return false;
-  const claimed = record.clientCode ?? record.companyCode ??
-    record.company?.clientCode ?? record.company?.code;
-  return claimed == null ||
-    (typeof claimed === "string" && claimed.trim().toLowerCase() === client.toLowerCase());
+  // Check every declared alias: a valid clientCode must not conceal a
+  // contradictory companyCode or nested company identity in the same record.
+  const claimedCodes = [record.clientCode, record.companyCode,
+    record.company?.clientCode, record.company?.code];
+  return claimedCodes.every((claimed) => claimed == null ||
+    (typeof claimed === "string" && claimed.trim().toLowerCase() === client.toLowerCase()));
 }
 
 export function isValidSupportOverview(overview, user) {
