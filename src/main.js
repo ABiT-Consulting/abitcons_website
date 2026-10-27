@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -1049,8 +1049,8 @@ if (supportPortal) {
       });
       if (!supportSessionGuard.isCurrent(loginRevision) ||
           (readStoredSupportUser()?.sessionToken || "") !== initialSession) return;
-      if (!user?.sessionToken) {
-        throw new Error("Sign-in response was invalid. Please contact ABiT support.");
+      if (!isScopedSupportUser(user)) {
+        throw new Error("ABITask did not return a company mapping for this account. Contact ABiT support.");
       }
       persistSupportUser(user);
       syncSupportWorkspaceRoute(user);

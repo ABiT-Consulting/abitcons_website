@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, shouldEndSupportSession, isScopedSupportUser } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -75,4 +75,25 @@ test("revoked or expired ABITask access must clear the visible support workspace
   assert.equal(shouldEndSupportSession(403), true);
   assert.equal(shouldEndSupportSession(422), false);
   assert.equal(shouldEndSupportSession(502), false);
+});
+
+test("ABITask identities without a verified company cannot open a support workspace", () => {
+  const unmapped = { sessionToken: "valid-looking-token", login: "umar" };
+  const mapped = { sessionToken: "test-token", login: "umar", company: { clientCode: "CHT", name: "CHT" } };
+  const store = storage({ "abit-support-auth-user": JSON.stringify(unmapped) });
+  assert.equal(isScopedSupportUser(unmapped), false);
+  assert.equal(readStoredSupportUser(store), null);
+  assert.equal(store.getItem("abit-support-auth-user"), null);
+  persistSupportUser(store, unmapped);
+  assert.equal(store.getItem("abit-support-auth-user"), null);
+  assert.equal(isScopedSupportUser(mapped), true);
+  persistSupportUser(store, mapped);
+  assert.deepEqual(readStoredSupportUser(store), mapped);
+});
+
+test("a response for a different company is rejected even if the token matches", () => {
+  const cht = { sessionToken: "shared-token", clientCode: "CHT" };
+  const other = { sessionToken: "shared-token", clientCode: "OTHER" };
+  assert.equal(isCurrentSupportSession(cht, other), false);
+  assert.equal(isCurrentSupportSession(cht, { ...cht, clientCode: "cht" }), true);
 });

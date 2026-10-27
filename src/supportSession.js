@@ -3,6 +3,10 @@ import { getSupportClientCode } from "./supportWorkspace.js";
 const supportSessionKey = "abit-support-auth-user";
 const legacySessionKey = "abit-auth-user";
 
+export function isScopedSupportUser(user) {
+  return Boolean(typeof user?.sessionToken === "string" && user.sessionToken && getSupportClientCode(user));
+}
+
 function readSession(storage, key) {
   try {
     return JSON.parse(storage.getItem(key) || "null");
@@ -14,13 +18,13 @@ function readSession(storage, key) {
 
 export function readStoredSupportUser(storage) {
   const current = readSession(storage, supportSessionKey);
-  if (current?.sessionToken) return current;
+  if (isScopedSupportUser(current)) return current;
+  if (current) storage.removeItem(supportSessionKey);
 
   // Existing deployments used the general website login key. Migrate only
   // sessions identifiable as support/ABITask identities, never local accounts.
   const legacy = readSession(storage, legacySessionKey);
-  if (legacy?.sessionToken &&
-      (legacy.provider === "Support" || legacy.provider === "ABITask" || getSupportClientCode(legacy))) {
+  if (isScopedSupportUser(legacy)) {
     storage.setItem(supportSessionKey, JSON.stringify(legacy));
     storage.removeItem(legacySessionKey);
     return legacy;
@@ -29,7 +33,7 @@ export function readStoredSupportUser(storage) {
 }
 
 export function persistSupportUser(storage, user) {
-  if (user?.sessionToken) {
+  if (isScopedSupportUser(user)) {
     storage.setItem(supportSessionKey, JSON.stringify(user));
   } else {
     storage.removeItem(supportSessionKey);
@@ -46,7 +50,9 @@ export function shouldEndSupportSession(status) {
   return status === 401 || status === 403;
 }
 export function isCurrentSupportSession(expected, current) {
-  return Boolean(expected?.sessionToken && expected.sessionToken === current?.sessionToken);
+  return Boolean(isScopedSupportUser(expected) && isScopedSupportUser(current) &&
+    expected.sessionToken === current.sessionToken &&
+    getSupportClientCode(expected).toLowerCase() === getSupportClientCode(current).toLowerCase());
 }
 
 // Track a session's lifetime, including sign-out followed by sign-in, so late
