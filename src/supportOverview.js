@@ -23,8 +23,8 @@ export function isValidSupportOverview(overview, user) {
   }
 
   // Older ABITask contracts omit the client code. Check it whenever present,
-  // including on individual tickets, projects, and tasks, so a mixed response
+  // including summary metrics, tickets, projects, and tasks, so a mixed response
   // cannot leak another company's data into the current workspace.
-  return [overview, ...overview.tickets, ...overview.projects, ...overview.tasks]
+  return [overview, overview.summary, ...overview.tickets, ...overview.projects, ...overview.tasks]
     .every((record) => matchesDeclaredClient(record, currentClient));
 }

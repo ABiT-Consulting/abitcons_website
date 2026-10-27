@@ -71,3 +71,10 @@ test("legacy records without client metadata still render, but malformed records
     assert.equal(isValidSupportOverview({ ...valid(), [collection]: ["untrusted"] }, user), false);
   }
 });
+test("summary identity must match the signed-in ABITask client", () => {
+  const summary = { openTickets: 3, clientCode: "CHT", companyCode: "cht" };
+  assert.equal(isValidSupportOverview({ ...valid(), summary }, user), true);
+  assert.equal(isValidSupportOverview({ ...valid(), summary: { ...summary, companyCode: "OTHER" } }, user), false);
+  assert.equal(isValidSupportOverview({ ...valid(), summary: { company: { code: "OTHER" } } }, user), false);
+  assert.equal(isValidSupportOverview({ ...valid(), summary: { clientCode: "" } }, user), false);
+});
