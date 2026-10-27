@@ -44,7 +44,7 @@ try {
   verify(
     login.response.status === 401 && typeof login.data?.error === "string" &&
     !/valid email address|local account mode/i.test(login.data.error),
-    `Support login uses ABITask rather than local email mode (HTTP ${login.response.status})`,
+    `Support login uses ABITask rather than local email mode (HTTP ${login.response.status}; ${String(login.data?.error || "unexpected response").slice(0, 150)})`,
   );
 
   const overview = await request("/api/support-overview.php");

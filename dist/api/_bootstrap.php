@@ -1233,7 +1233,16 @@ function api_support_ticket_create(): void
 
 function api_task_portal_bridge_url(): string
 {
-    return rtrim(api_trim(getenv('ABIT_TASK_PORTAL_BRIDGE_URL') ?: 'https://abitask.abit.ai'), '/');
+    $base = rtrim(api_trim(getenv('ABIT_TASK_PORTAL_BRIDGE_URL') ?: 'https://abitask.abit.ai'), '/');
+    $parts = parse_url($base);
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    $host = strtolower((string) ($parts['host'] ?? ''));
+    $localHttp = $scheme === 'http' && in_array($host, ['localhost', '127.0.0.1'], true);
+    if (!is_array($parts) || $host === '' || ($scheme !== 'https' && !$localHttp) ||
+        (isset($parts['user']) || isset($parts['pass'])) || isset($parts['query']) || isset($parts['fragment'])) {
+        api_send_json(503, ['error' => 'Support portal bridge is not configured.']);
+    }
+    return $base;
 }
 
 function api_bridge_proxy(string $path, string $method): void
@@ -1267,26 +1276,36 @@ function api_bridge_proxy(string $path, string $method): void
         if (strlen($rawBody) > 65536) {
             api_send_json(413, ['error' => 'Request is too large.']);
         }
-        $input = json_decode($rawBody, true);
-        if (!is_array($input)) {
+        $inputObject = json_decode($rawBody);
+        if (!($inputObject instanceof stdClass)) {
             api_send_json(400, ['error' => 'A valid JSON object is required.']);
         }
+        $input = (array) $inputObject;
         if ($path === '/api/signin') {
-            $body = json_encode([
-                'login' => api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? ''),
-                'password' => is_string($input['password'] ?? null) ? $input['password'] : '',
-            ]);
+            $login = api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? '');
+            $password = is_string($input['password'] ?? null) ? $input['password'] : '';
+            if ($login === '' || $password === '') {
+                api_send_json(422, ['error' => 'Username and password are required.']);
+            }
+            $body = json_encode(['login' => $login, 'password' => $password]);
         } elseif ($path === '/api/support/forgot-password') {
-            $body = json_encode([
-                'login' => api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? ''),
-            ]);
+            $login = api_trim($input['login'] ?? $input['username'] ?? $input['email'] ?? '');
+            if ($login === '') {
+                api_send_json(422, ['error' => 'Enter your username or registered email first.']);
+            }
+            $body = json_encode(['login' => $login]);
         } else {
             // ABITask derives company and ERP project from the bearer session.
             // Never forward client-supplied company or ERP project overrides.
+            $subject = api_trim($input['subject'] ?? '');
+            $message = api_trim($input['message'] ?? '');
+            if ($subject === '' || $message === '') {
+                api_send_json(422, ['error' => 'Ticket subject and details are required.']);
+            }
             $body = json_encode([
-                'subject' => api_trim($input['subject'] ?? ''),
-                'message' => api_trim($input['message'] ?? ''),
-                'priority' => api_trim($input['priority'] ?? '1'),
+                'subject' => $subject,
+                'message' => $message,
+                'priority' => api_trim($input['priority'] ?? '1') ?: '1',
             ]);
         }
         $headers[] = 'Content-Type: application/json';
@@ -1316,7 +1335,7 @@ function api_bridge_proxy(string $path, string $method): void
     // Never treat an upstream HTML error, redirect, or server failure as a valid API response.
     if ($status < 200 || $status > 499 || strlen($responseBody) > 2000000 ||
         stripos($contentType, 'application/json') === false ||
-        !is_array(json_decode($responseBody, true))) {
+        !is_object(json_decode($responseBody))) {
         api_send_json(502, ['error' => 'Support portal bridge returned an invalid response.']);
     }
 

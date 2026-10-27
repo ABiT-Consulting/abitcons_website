@@ -31,3 +31,23 @@ test("website deployment cannot mutate unrelated cPanel domains", () => {
   assert.ok(workflow.includes("VersionControlDeployment/create"));
   assert.ok(workflow.includes("verify_support_bridge.mjs"));
 });
+
+test("PHP support proxy validates JSON shapes and prevents unscoped task creation", () => {
+  const php = readFileSync(new URL("../public/api/_bootstrap.php", import.meta.url), "utf8");
+  assert.match(php, /\$inputObject = json_decode\(\$rawBody\)/);
+  assert.match(php, /!\(\$inputObject instanceof stdClass\)/);
+  assert.match(php, /Username and password are required/);
+  assert.match(php, /Ticket subject and details are required/);
+  assert.match(php, /Never forward client-supplied company or ERP project overrides/);
+  assert.doesNotMatch(php.slice(php.indexOf("function api_bridge_proxy")), /\$input\['(?:clientCode|company|project)'\]/);
+  assert.match(php, /!is_object\(json_decode\(\$responseBody\)\)/);
+});
+
+test("PHP support bridge rejects insecure upstream URLs", () => {
+  const php = readFileSync(new URL("../public/api/_bootstrap.php", import.meta.url), "utf8");
+  const section = php.slice(php.indexOf("function api_task_portal_bridge_url"), php.indexOf("function api_bridge_proxy"));
+  assert.match(section, /parse_url\(\$base\)/);
+  assert.match(section, /\$scheme !== 'https'/);
+  assert.match(section, /localhost/);
+  assert.match(section, /Support portal bridge is not configured/);
+});
