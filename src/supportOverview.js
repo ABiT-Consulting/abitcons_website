@@ -1,7 +1,16 @@
 import { getSupportClientCode } from "./supportWorkspace.js";
 
-// Never treat a partial or cross-client ABITask response as a successfully synced workspace.
-// Client isolation must also be enforced by the authenticated ABITask backend.
+// Never render a partial or cross-client ABITask response as a synced workspace.
+// ABITask must enforce client isolation on the server; this is a second
+// boundary for accidentally mixed tenant records returned by the bridge.
+function matchesDeclaredClient(record, client) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) return false;
+  const claimed = record.clientCode ?? record.companyCode ??
+    record.company?.clientCode ?? record.company?.code;
+  return claimed == null ||
+    (typeof claimed === "string" && claimed.trim().toLowerCase() === client.toLowerCase());
+}
+
 export function isValidSupportOverview(overview, user) {
   const currentClient = getSupportClientCode(user);
   if (!currentClient || !overview || typeof overview !== "object" || Array.isArray(overview) ||
@@ -11,10 +20,9 @@ export function isValidSupportOverview(overview, user) {
     return false;
   }
 
-  // Older bridge contracts omit the client code in overview responses. When present,
-  // it must agree with the authenticated session (never the URL hash).
-  const claimedClient = overview.clientCode ?? overview.company?.clientCode ?? overview.company?.code;
-  return claimedClient == null ||
-    (typeof claimedClient === "string" &&
-     claimedClient.trim().toLowerCase() === currentClient.toLowerCase());
+  // Older ABITask contracts omit the client code. Check it whenever present,
+  // including on individual tickets, projects, and tasks, so a mixed response
+  // cannot leak another company's data into the current workspace.
+  return [overview, ...overview.tickets, ...overview.projects, ...overview.tasks]
+    .every((record) => matchesDeclaredClient(record, currentClient));
 }

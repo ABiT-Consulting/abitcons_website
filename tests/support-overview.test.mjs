@@ -28,3 +28,32 @@ test("an overview declaring another company cannot be rendered in CHT workspace"
   assert.equal(isValidSupportOverview(valid(), { ...user, clientCode: "OTHER" }), false);
   assert.equal(isValidSupportOverview(valid(), { login: "unknown", sessionToken: "token" }), false);
 });
+
+test("a mixed-company ticket, project, or ERP task blocks the entire workspace", () => {
+  for (const collection of ["tickets", "projects", "tasks"]) {
+    for (const tenantField of [
+      { clientCode: "OTHER" },
+      { companyCode: "OTHER" },
+      { company: { code: "OTHER" } },
+      { company: { clientCode: "OTHER" } },
+    ]) {
+      assert.equal(isValidSupportOverview({
+        ...valid(),
+        [collection]: [{ title: "Cross-client record", ...tenantField }],
+      }, user), false, `${collection} must not include another company's records`);
+    }
+  }
+});
+
+test("legacy records without client metadata still render, but malformed records do not", () => {
+  assert.equal(isValidSupportOverview({
+    ...valid(),
+    tickets: [{ title: "Ticket" }],
+    tasks: [{ title: "Task", companyCode: "cht" }],
+    projects: [{ title: "Project", clientCode: "CHT" }],
+  }, user), true);
+  for (const collection of ["tickets", "projects", "tasks"]) {
+    assert.equal(isValidSupportOverview({ ...valid(), [collection]: [null] }, user), false);
+    assert.equal(isValidSupportOverview({ ...valid(), [collection]: ["untrusted"] }, user), false);
+  }
+});
