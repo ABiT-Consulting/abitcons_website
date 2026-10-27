@@ -1,5 +1,5 @@
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
-import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent } from "./supportSession.js";
+import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard } from "./supportSession.js";
 const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
@@ -716,6 +716,7 @@ if (supportPortal) {
   let supportRefreshTimer = null;
   let isSupportLoading = false;
   let queuedSupportRefresh = false;
+  const supportSessionGuard = createSupportSessionGuard();
 
   const sanitizePortalText = (value) =>
     String(value ?? "")
@@ -782,6 +783,7 @@ if (supportPortal) {
   };
 
   const persistSupportUser = (user) => {
+    supportSessionGuard.invalidate();
     saveSupportUser(localStorage, user);
     setAuthNavigation();
     window.dispatchEvent(new CustomEvent("abit-auth-change", { detail: user || null }));
@@ -1029,6 +1031,8 @@ if (supportPortal) {
     const login = loginForm.elements.login?.value?.trim() || "";
     const password = loginForm.elements.password?.value || "";
     const submitButton = loginForm.querySelector('button[type="submit"]');
+    const loginRevision = supportSessionGuard.capture();
+    const initialSession = readStoredSupportUser()?.sessionToken || "";
 
     if (!login || !password) {
       setAuthFeedback("Username and password are required.", true);
@@ -1043,6 +1047,8 @@ if (supportPortal) {
         method: "POST",
         payload: { login, password },
       });
+      if (!supportSessionGuard.isCurrent(loginRevision) ||
+          (readStoredSupportUser()?.sessionToken || "") !== initialSession) return;
       if (!user?.sessionToken) {
         throw new Error("Sign-in response was invalid. Please contact ABiT support.");
       }
@@ -1051,6 +1057,8 @@ if (supportPortal) {
       loginForm.reset();
       setAuthStatus(`Signed in as ${user.login || user.email || user.name}.`);
     } catch (error) {
+      if (!supportSessionGuard.isCurrent(loginRevision) ||
+          (readStoredSupportUser()?.sessionToken || "") !== initialSession) return;
       const message =
         error instanceof Error ? error.message : "Sign-in could not be completed. Please try again.";
       setAuthStatus("Not signed in.", true);
@@ -1177,10 +1185,12 @@ if (supportPortal) {
         payload,
         auth: true,
       });
+      if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
       ticketForm.reset();
       setAlert("Support ticket created. Refreshing your workspace...");
       await loadSupportOverview();
     } catch (error) {
+      if (!isCurrentSupportSession(user, readStoredSupportUser())) return;
       setAlert(error instanceof Error ? error.message : "Support ticket could not be created.", true);
     } finally {
       if (submitButton) submitButton.disabled = false;
@@ -1198,6 +1208,7 @@ if (supportPortal) {
   // previously rendered company data before the new session is loaded.
   window.addEventListener("storage", (event) => {
     if (!isSupportSessionStorageEvent(event.key)) return;
+    supportSessionGuard.invalidate();
     clearSupportRefresh();
     renderSignedOut();
     loadSupportOverview();

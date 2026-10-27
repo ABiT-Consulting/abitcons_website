@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent } from "../src/supportSession.js";
+import { readStoredSupportUser, persistSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard } from "../src/supportSession.js";
 
 function storage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -55,4 +55,17 @@ test("only support account changes trigger the cross-tab workspace reset", () =>
   assert.equal(isSupportSessionStorageEvent("abit-support-auth-user"), true);
   assert.equal(isSupportSessionStorageEvent("abit-auth-user"), false);
   assert.equal(isSupportSessionStorageEvent(null), false);
+});
+
+test("outdated support sign-in responses are discarded after sign-out or cross-tab account changes", () => {
+  const guard = createSupportSessionGuard();
+  const pendingLogin = guard.capture();
+  assert.equal(guard.isCurrent(pendingLogin), true);
+  guard.invalidate(); // Another tab signed in, or user signed out.
+  assert.equal(guard.isCurrent(pendingLogin), false);
+  const replacementLogin = guard.capture();
+  assert.equal(guard.isCurrent(replacementLogin), true);
+  guard.invalidate(); // Sign-out and sign-in can happen before response arrives.
+  guard.invalidate();
+  assert.equal(guard.isCurrent(replacementLogin), false);
 });

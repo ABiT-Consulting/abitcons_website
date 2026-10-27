@@ -45,3 +45,14 @@ export function isSupportSessionStorageEvent(key) {
 export function isCurrentSupportSession(expected, current) {
   return Boolean(expected?.sessionToken && expected.sessionToken === current?.sessionToken);
 }
+
+// Track a session's lifetime, including sign-out followed by sign-in, so late
+// login responses cannot silently restore an older company's workspace.
+export function createSupportSessionGuard() {
+  let revision = 0;
+  return {
+    capture: () => revision,
+    invalidate: () => { revision += 1; },
+    isCurrent: (captured) => captured === revision,
+  };
+}
