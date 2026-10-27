@@ -21,6 +21,13 @@ test("production dist contains exactly the PHP support bridge code that was test
   for (const file of ["_bootstrap.php", ...phpEndpoints.keys()]) {
     const source = readFileSync(new URL(`../public/api/${file}`, import.meta.url), "utf8");
     const deployed = readFileSync(new URL(`../dist/api/${file}`, import.meta.url), "utf8");
-    assert.equal(deployed, source, `dist/api/${file} must match public/api/${file}; run npm run build`);
+    assert.equal(deployed.replaceAll("\r\n", "\n"), source.replaceAll("\r\n", "\n"), `dist/api/${file} must match public/api/${file}; run npm run build`);
   }
+});
+
+test("website deployment cannot mutate unrelated cPanel domains", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/cpanel-deploy.yml", import.meta.url), "utf8");
+  assert.doesNotMatch(workflow, /SubDomain|changedocroot|sbodesk|sns-site/i);
+  assert.ok(workflow.includes("VersionControlDeployment/create"));
+  assert.ok(workflow.includes("verify_support_bridge.mjs"));
 });
