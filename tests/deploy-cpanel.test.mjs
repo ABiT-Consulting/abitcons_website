@@ -63,6 +63,7 @@ test("Azure DevOps cPanel deploy rejects non-website pipeline and branch before 
 test("Azure DevOps runs tests, validates committed cPanel payload and deploys only main", () => {
   const yaml = readFileSync(new URL("../azure-pipelines.yml", import.meta.url), "utf8");
   const deploy = readFileSync(new URL("../scripts/deploy_cpanel_azure.mjs", import.meta.url), "utf8");
+  const github = readFileSync(new URL("../.github/workflows/cpanel-deploy.yml", import.meta.url), "utf8");
   assert.match(yaml, /vmImage:\s*ubuntu-latest/);
   assert.match(yaml, /npm ci[\s\S]*npm test[\s\S]*npm run build/);
   assert.match(yaml, /git diff --ignore-space-at-eol --exit-code -- dist/);
@@ -74,5 +75,7 @@ test("Azure DevOps runs tests, validates committed cPanel payload and deploys on
   assert.match(deploy, /VersionControlDeployment\/create/);
   assert.match(deploy, /verify_support_bridge\.mjs/);
   assert.match(deploy, /BUILD_SOURCEVERSION/);
+  assert.match(github, /workflow_dispatch:\s*\{\}/);
+  assert.doesNotMatch(github.split("jobs:")[0], /^\s*push:\s*$/m);
   assert.doesNotMatch(deploy, /CPANEL_TOKEN\s*=\s*["']/);
 });

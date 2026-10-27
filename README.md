@@ -80,11 +80,9 @@ checks the cPanel Git repository is this website, verifies the deployed commit,
 and runs the public support API smoke test. A successful build artifact alone
 **does not** mean the production website has been deployed.
 
-The original push-triggered `.github/workflows/cpanel-deploy.yml` remains
-unchanged because Dev-02's Git credential cannot modify GitHub Actions files
-without the `workflow` scope. GitHub will continue to show billing-blocked
-runs until an administrator disables that workflow or makes it manual-only.
-Azure DevOps is the intended primary production release pipeline.
+`.github/workflows/cpanel-deploy.yml` is now manual-only. Azure DevOps is
+the automatic production release pipeline. The GitHub Actions fallback can
+only be run after the GitHub account's billing restriction is resolved.
 Standard deployment uses `.github/workflows/cpanel-deploy.yml`. If GitHub Actions
 cannot start (e.g. organization billing issue), an authorized operator can
 configure `CPANEL_HOST`, `CPANEL_USER`, `CPANEL_TOKEN`, and `CPANEL_REPO_ROOT`
