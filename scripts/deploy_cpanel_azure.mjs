@@ -1,9 +1,10 @@
 // Azure DevOps -> cPanel Git deployment for ABITCONS_WEBSITE.
-// Only accepts a verified main-branch build of the website repo.
-// Credentials are injected by Azure DevOps as secret variables, never stored here.
+// Only deploys a verified main build of ABiT-Consulting/abitcons_website.
+// cPanel credentials are injected by Azure DevOps; never store or log them.
 import { execFileSync, spawnSync } from "node:child_process";
+import { selectWebsiteCpanelRepository } from "./cpanel_repo_identity.mjs";
 
-const required = ["CPANEL_HOST", "CPANEL_USER", "CPANEL_TOKEN", "CPANEL_REPO_ROOT"];
+const required = ["CPANEL_HOST", "CPANEL_USER", "CPANEL_TOKEN"];
 const unset = (value) => !value?.trim() || /^\$\([A-Za-z_][A-Za-z0-9_.-]*\)$/.test(value.trim());
 const missing = required.filter((name) => unset(process.env[name]));
 if (missing.length) {
@@ -13,12 +14,10 @@ if (missing.length) {
 }
 
 const expectedRepository = "ABiT-Consulting/abitcons_website";
-const sourceBranch = process.env.BUILD_SOURCEBRANCH;
 const sourceVersion = process.env.BUILD_SOURCEVERSION || "";
-const definition = process.env.BUILD_DEFINITIONNAME;
-if (definition !== "ABITCONS_WEBSITE" ||
+if (process.env.BUILD_DEFINITIONNAME !== "ABITCONS_WEBSITE" ||
     process.env.BUILD_REPOSITORY_NAME !== expectedRepository ||
-    sourceBranch !== "refs/heads/main" ||
+    process.env.BUILD_SOURCEBRANCH !== "refs/heads/main" ||
     !/^[0-9a-f]{40}$/i.test(sourceVersion)) {
   throw new Error("Refusing cPanel deployment outside the ABITCONS_WEBSITE main release pipeline.");
 }
@@ -35,14 +34,14 @@ const host = process.env.CPANEL_HOST.trim();
 const port = unset(process.env.CPANEL_PORT) ? "2083" : process.env.CPANEL_PORT.trim();
 const user = process.env.CPANEL_USER.trim();
 const token = process.env.CPANEL_TOKEN.trim();
-const root = process.env.CPANEL_REPO_ROOT.trim();
+const rootHint = unset(process.env.CPANEL_REPO_ROOT) ? "" : process.env.CPANEL_REPO_ROOT.trim();
 if (!/^[a-z0-9.-]+$/i.test(host) || !/^\d{2,5}$/.test(port) ||
-    !root.startsWith("/") || !/(?:^|\/)abitcons_website(?:\/|$)/i.test(root)) {
-  throw new Error("Invalid cPanel host, port, or repository binding configuration.");
+    (rootHint && (!rootHint.startsWith("/") || rootHint.split("/").includes("..")))) {
+  throw new Error("Invalid cPanel host, port, or optional repository root.");
 }
-
 const base = "https://" + host + ":" + port + "/execute/";
 const auth = "cpanel " + user + ":" + token;
+
 async function api(route, params = {}) {
   const url = new URL(route, base);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -55,31 +54,28 @@ async function api(route, params = {}) {
   const body = await response.json();
   const result = body?.result ?? body;
   if (Number(result?.status) !== 1) {
-    // Do not echo API payloads, paths, or authentication details into CI logs.
+    // cPanel error bodies may contain user-specific paths or tokens. Never echo them.
     throw new Error("cPanel " + route + " returned unsuccessful status.");
   }
   return result.data;
 }
-
 const value = (data) => Array.isArray(data) ? data[0] : data;
-const repositoryInfo = value(await api("VersionControl/retrieve", { repository_root: root }));
-const remoteCandidates = [
-  repositoryInfo?.clone_url, repositoryInfo?.repository_url,
-  repositoryInfo?.remote_url, repositoryInfo?.url, repositoryInfo?.source_repo,
-];
-const configuredRemote = remoteCandidates.find((x) => typeof x === "string" && x.length);
-if (!configuredRemote ||
-    !/github\.com[:/]ABiT-Consulting\/abitcons_website(?:\.git)?\/?$/i.test(configuredRemote)) {
-  throw new Error("cPanel Git repository identity could not be verified. Deployment aborted.");
-}
 
-console.log("Validated cPanel website repository. Deploying verified main commit " +
-  actualCommit.slice(0, 12) + ".");
+// VersionControl/retrieve returns all registered repositories, not one record.
+// Select only a unique Git repo explicitly linked to THIS website source.
+const registeredRepos = await api("VersionControl/retrieve");
+const root = selectWebsiteCpanelRepository(registeredRepos, rootHint);
+console.log("Validated cPanel website Git binding; updating main to " + actualCommit.slice(0, 12) + ".");
+
 const updated = value(await api("VersionControl/update", {
   repository_root: root, branch: "main",
 }));
 if (updated && Number(updated.deployable) === 0) {
-  throw new Error("cPanel Git repository is not deployable.");
+  throw new Error("cPanel Git repository is not deployable after update.");
+}
+if (updated?.last_update?.identifier &&
+    updated.last_update.identifier !== actualCommit) {
+  throw new Error("cPanel Git update did not reach the verified main commit.");
 }
 
 const created = value(await api("VersionControlDeployment/create", { repository_root: root }));
@@ -93,7 +89,8 @@ let verified = false;
 for (let attempt = 0; attempt < 60; attempt++) {
   const data = await api("VersionControlDeployment/retrieve");
   const entries = Array.isArray(data) ? data : (data ? [data] : []);
-  const entry = entries.find((candidate) => String(candidate?.deploy_id) === String(id));
+  const entry = entries.find((candidate) =>
+    String(candidate?.deploy_id) === String(id) && candidate?.repository_root === root);
   if (entry?.timestamps?.failed || entry?.timestamps?.canceled) {
     throw new Error("cPanel Git deployment failed or was cancelled.");
   }

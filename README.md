@@ -72,9 +72,9 @@ line endings). If this check fails, run
 `npm run build` on Dev-02 and commit the generated `dist/` together with source.
 
 Before production deployment, set `CPANEL_HOST`, `CPANEL_USER`,
-`CPANEL_REPO_ROOT` and **secret** `CPANEL_TOKEN` in Azure DevOps > Common >
-Pipelines > ABITCONS_WEBSITE > Edit > Variables; optionally set `CPANEL_PORT`
-(default 2083). Restrict access to the release pipeline and do not commit or
+and **secret** `CPANEL_TOKEN` in Azure DevOps > Common >
+Pipelines > ABITCONS_WEBSITE > Edit > Variables. `CPANEL_REPO_ROOT` is optional:
+the release discovers the unique matching cPanel Git repo by its exact GitHub remote URL. `CPANEL_PORT` defaults to 2083. Restrict access and do not commit or
 print credentials. The deploy stage fails closed if variables are absent,
 checks the cPanel Git repository is this website, verifies the deployed commit,
 and runs the public support API smoke test. A successful build artifact alone
@@ -83,7 +83,7 @@ and runs the public support API smoke test. A successful build artifact alone
 `.github/workflows/cpanel-deploy.yml` is now manual-only. Azure DevOps is
 the automatic production release pipeline. The GitHub Actions fallback can
 only be run after the GitHub account's billing restriction is resolved.
-Standard deployment uses `.github/workflows/cpanel-deploy.yml`. If GitHub Actions
+Manual fallback uses `.github/workflows/cpanel-deploy.yml` after billing is restored. If GitHub Actions
 cannot start (e.g. organization billing issue), an authorized operator can
 configure `CPANEL_HOST`, `CPANEL_USER`, `CPANEL_TOKEN`, and `CPANEL_REPO_ROOT`
 **in the Dev-02 process environment** and run `npm run deploy:cpanel:dev02`.
