@@ -1,7 +1,6 @@
-# Azure DevOps is the primary CI/CD runner while GitHub Actions billing is locked.
-# Pipeline: Common / ABITCONS_WEBSITE (connected to ABiT-Consulting/abitcons_website).
-# Configure CPANEL_HOST, CPANEL_USER, CPANEL_TOKEN (secret), and
-# CPANEL_REPO_ROOT as pipeline variables in Azure DevOps. Never put values here.
+# Azure DevOps builds the website artifact. The Common / abitcons_website
+# classic Release pipeline consumes web-dist and deploys it to IIS on Dev-02.
+# Do not deploy this website through cPanel.
 trigger:
   branches:
     include:
@@ -17,17 +16,15 @@ pool:
 
 stages:
   - stage: Validate
-    displayName: Test and package website
+    displayName: Test and package website for IIS
     jobs:
       - job: build
-        displayName: Build and verify tracked cPanel payload
+        displayName: Build and verify IIS deployment payload
         steps:
           - checkout: self
             clean: true
             fetchDepth: 0
 
-          # Avoid NodeTool@0 on legacy self-hosted agents: its task-lib crashes
-          # with "crypto.randomUUID is not a function" before the build starts.
           - bash: |
               set -euo pipefail
               node --version
@@ -35,13 +32,11 @@ stages:
               node -e "if (Number(process.versions.node.split('.')[0]) < 20) process.exit(1)"
               npm ci
               npm test
-              # Keep reproducible builds even when the calendar date changes.
               export SEO_LASTMOD="$(awk -F'[<>]' '/<lastmod>/{print $3; exit}' public/sitemap.xml)"
               [[ "$SEO_LASTMOD" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
               npm run build
 
-              # cPanel's .cpanel.yml publishes the COMMITTED dist/ files, not
-              # this build artifact. Refuse stale/dist-inconsistent releases.
+              # The IIS release consumes this artifact; keep committed dist reproducible.
               git diff --ignore-space-at-eol --exit-code -- dist
               if [ -n "$(git ls-files --others --exclude-standard -- dist)" ]; then
                 echo "Untracked dist files detected. Rebuild and commit dist/ on main."
@@ -50,35 +45,17 @@ stages:
               test -f dist/index.html
               test -f dist/api/signin.php
               test -f dist/api/support-overview.php
-            displayName: Install, test, build, verify cPanel payload
+            displayName: Install, test, build, verify website payload
 
-          - publish: $(Build.SourcesDirectory)/dist
-            artifact: website-dist
-            displayName: Publish tested website artifact
+          - task: ArchiveFiles@2
+            displayName: Package website for IIS release
+            inputs:
+              rootFolderOrFile: '$(Build.SourcesDirectory)/dist'
+              includeRootFolder: false
+              archiveType: zip
+              archiveFile: '$(Build.ArtifactStagingDirectory)/web-dist.zip'
+              replaceExistingArchive: true
 
-  - stage: DeployProduction
-    displayName: Deploy GitHub main to cPanel
-    dependsOn: Validate
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    jobs:
-      - job: deploy
-        displayName: Authorized cPanel Git deployment
-        steps:
-          - checkout: self
-            clean: true
-            fetchDepth: 0
-
-          - bash: |
-              set -euo pipefail
-              node scripts/deploy_cpanel_azure.mjs
-            displayName: Deploy verified commit and smoke-test live support bridge
-            env:
-              BUILD_DEFINITIONNAME: $(Build.DefinitionName)
-              BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
-              BUILD_SOURCEBRANCH: $(Build.SourceBranch)
-              BUILD_SOURCEVERSION: $(Build.SourceVersion)
-              CPANEL_HOST: $(CPANEL_HOST)
-              CPANEL_PORT: $(CPANEL_PORT)
-              CPANEL_USER: $(CPANEL_USER)
-              CPANEL_TOKEN: $(CPANEL_TOKEN)
-              CPANEL_REPO_ROOT: $(CPANEL_REPO_ROOT)
+          - publish: $(Build.ArtifactStagingDirectory)/web-dist.zip
+            artifact: web-dist
+            displayName: Publish IIS deployment package

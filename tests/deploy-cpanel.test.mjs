@@ -60,24 +60,16 @@ test("Azure DevOps cPanel deploy rejects non-website pipeline and branch before 
   assert.doesNotMatch(result.stdout, /Deploying verified|deployment accepted/i);
 });
 
-test("Azure DevOps runs tests, validates committed cPanel payload and deploys only main", () => {
+test("Azure DevOps validates committed website payload and publishes the IIS release artifact", () => {
   const yaml = readFileSync(new URL("../azure-pipelines.yml", import.meta.url), "utf8");
-  const deploy = readFileSync(new URL("../scripts/deploy_cpanel_azure.mjs", import.meta.url), "utf8");
-  const github = readFileSync(new URL("../.github/workflows/cpanel-deploy.yml", import.meta.url), "utf8");
   assert.match(yaml, /vmImage:\s*ubuntu-latest/);
   assert.match(yaml, /npm ci[\s\S]*npm test[\s\S]*npm run build/);
   assert.match(yaml, /git diff --ignore-space-at-eol --exit-code -- dist/);
-  assert.match(yaml, /DeployProduction[\s\S]*refs\/heads\/main/);
-  assert.match(yaml, /deploy_cpanel_azure\.mjs/);
-  assert.match(yaml, /CPANEL_TOKEN:\s*\$\(CPANEL_TOKEN\)/);
-  assert.match(deploy, /VersionControl\/retrieve/);
-  assert.match(deploy, /VersionControl\/update/);
-  assert.match(deploy, /VersionControlDeployment\/create/);
-  assert.match(deploy, /verify_support_bridge\.mjs/);
-  assert.match(deploy, /BUILD_SOURCEVERSION/);
-  assert.match(github, /workflow_dispatch:\s*\{\}/);
-  assert.doesNotMatch(github.split("jobs:")[0], /^\s*push:\s*$/m);
-  assert.doesNotMatch(deploy, /CPANEL_TOKEN\s*=\s*["']/);
+  assert.match(yaml, /ArchiveFiles@2/);
+  assert.match(yaml, /web-dist\.zip/);
+  assert.match(yaml, /artifact: web-dist/);
+  assert.match(yaml, /classic Release pipeline consumes web-dist and deploys it to IIS/);
+  assert.doesNotMatch(yaml, /DeployProduction|CPANEL_TOKEN|deploy_cpanel_azure\.mjs/);
 });
 
 
