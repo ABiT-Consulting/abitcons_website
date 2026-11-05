@@ -127,11 +127,21 @@ export async function proxySupportBridge(request, response, upstreamPath, {
       jsonError(response, 502, "Support portal bridge returned an invalid response.");
       return;
     }
+    if (upstreamResponse.status >= 400) {
+      for (const key of ["error", "message"]) {
+        if (typeof parsedResponse[key] === "string" && /\berpnext\b/i.test(parsedResponse[key])) {
+          parsedResponse[key] = upstreamResponse.status === 401
+            ? "Invalid username or password. Please check your login details or use Forgot password."
+            : "We could not complete the request. Please contact ABiT support.";
+        }
+      }
+    }
+    const safeResponseBody = JSON.stringify(parsedResponse);
     response.writeHead(upstreamResponse.status, {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
     });
-    response.end(responseBody);
+    response.end(safeResponseBody);
   } catch (error) {
     jsonError(response, error?.status === 413 ? 413 : 502,
       error?.status === 413 ? "Request body is too large." : "Support portal bridge is unavailable.");

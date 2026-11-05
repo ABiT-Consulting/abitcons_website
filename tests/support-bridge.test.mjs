@@ -130,3 +130,16 @@ test("unauthorized overview and ticket creation fail before reaching the bridge"
     assert.equal(response.status, 401);
   }
 });
+
+test("customer-facing bridge errors do not expose the underlying ERP brand", async () => {
+  const response = makeResponse();
+  await proxySupportBridge(makeRequest("POST", { login: "unknown", password: "wrong" }), response, "/api/signin", {
+    baseUrl: "https://bridge.example.test",
+    fetchImpl: async () => new Response(JSON.stringify({ error: "ERPNext rejected these login credentials." }), {
+      status: 401, headers: { "content-type": "application/json" },
+    }),
+  });
+  assert.equal(response.status, 401);
+  assert.doesNotMatch(response.body, /ERPNext/i);
+  assert.match(response.body, /username or password/i);
+});

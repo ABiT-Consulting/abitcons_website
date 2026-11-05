@@ -1,4 +1,9 @@
 // Use only the identity supplied by ABITask; never trust a company code from the URL.
+export function isDedicatedSupportHostname(hostname) {
+  const value = typeof hostname === "string" ? hostname.trim().toLowerCase() : "";
+  return value === "support.abitcons.com" || value === "support.abit.ai";
+}
+
 export function getSupportClientCode(user) {
   // ABITask may provide the tenant code in more than one identity field.
   // Conflicting or malformed codes are never safe to use for a workspace.

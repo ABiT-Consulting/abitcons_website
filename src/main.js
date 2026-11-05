@@ -1,7 +1,7 @@
-import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
+import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash, isDedicatedSupportHostname } from "./supportWorkspace.js";
 import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, createSupportWorkspaceIdentityTracker, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
 import { isValidSupportOverview } from "./supportOverview.js";
-const isDedicatedSupportHost = window.location.hostname.toLowerCase() === "support.abitcons.com";
+const isDedicatedSupportHost = isDedicatedSupportHostname(window.location.hostname);
 if (isDedicatedSupportHost) {
   document.documentElement.classList.add("support-host");
 }

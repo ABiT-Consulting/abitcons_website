@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash,
+  getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash, isDedicatedSupportHostname,
 } from "../src/supportWorkspace.js";
 
 test("ABITask company code produces canonical CHT workspace route", () => {
@@ -25,4 +25,10 @@ test("conflicting or malformed ABITask identity codes never select a tenant", ()
   assert.equal(getSupportClientCode({ clientCode: "CHT", companyCode: "cht", company: { code: "CHT" } }), "CHT");
   assert.equal(getSupportClientCode({ companyCode: "CHT", company: { name: "Cloud Taktiks" } }), "CHT");
   assert.equal(supportWorkspaceHash({ clientCode: "CHT", company: { code: "OTHER" } }), "#support-portal");
+});
+
+test("dedicated support hostnames open the portal directly", () => {
+  assert.equal(isDedicatedSupportHostname("support.abit.ai"), true);
+  assert.equal(isDedicatedSupportHostname("SUPPORT.ABITCONS.COM"), true);
+  assert.equal(isDedicatedSupportHostname("www.abitcons.com"), false);
 });
