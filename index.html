@@ -233,15 +233,11 @@
         </a>
         <div class="nav-menu" data-nav-menu>
           <nav class="nav-links" aria-label="Primary navigation">
-            <a href="#about">About</a>
             <a href="#services">Services</a>
-            <a href="#seo-topics">Topics</a>
-            <a href="#sap-cloud-hosting">ERP + Cloud</a>
-            <a href="#ai-operations">AI Operations</a>
             <a href="#products">Products</a>
-            <a href="#expertise">Expertise</a>
-            <a href="#work">Work</a>
-            <a href="#support-portal" data-auth-link="signin">Sign In</a>
+            <a href="#ai-operations">AI &amp; Automation</a>
+            <a href="#work">Client Work</a>
+            <a href="#support-portal" data-auth-link="signin">Client Portal</a>
             <a href="#support-portal" data-auth-link="support" hidden>Support</a>
             <a href="#contact">Contact</a>
           </nav>
@@ -282,7 +278,7 @@
               <span class="accent">Built Around You.</span>
             </h1>
             <p class="lead">
-              We implement, customize, and support ERP systems of every kind &mdash; SAP Business One, Odoo, ERPNext, Microsoft Dynamics, NetSuite, Sage, Tally, custom-built ERPs and beyond &mdash; along with the integrations, automation, and connected business applications your teams rely on every day.
+              We connect ERP, custom software, AI automation, integrations, and managed cloud operations into one practical delivery system for growing businesses.
             </p>
             <div class="hero-actions">
               <a class="btn primary" href="#contact">Start a Project <span class="arrow" aria-hidden="true">&rarr;</span></a>
@@ -330,27 +326,43 @@
                 </div>
               </div>
             </div>
-            <div
-              class="hero-photo-showcase"
-              role="button"
-              tabindex="0"
-              aria-label="Show another inspiration photo"
-              aria-live="polite"
-              data-photo-showcase
-            >
-              <div class="hero-photo-showcase__copy">
-                <p data-photo-title>Build with the patience of nature and the reach of the cosmos.</p>
+            <div class="hero-operating-system" aria-label="ABiT enterprise delivery architecture">
+              <div class="hero-operating-system__header">
+                <div>
+                  <span class="hero-operating-system__eyebrow">ABiT delivery system</span>
+                  <strong>One team from ERP core to business outcomes</strong>
+                </div>
+                <span class="hero-operating-system__status"><i aria-hidden="true"></i> Strategy → Build → Operate</span>
               </div>
-              <div class="hero-photo-showcase__frame">
-                <img
-                  class="hero-photo-showcase__image"
-                  src="https://www.nasa.gov/wp-content/uploads/2023/03/pillars_of_creation.jpg?w=3840"
-                  alt="Hubble photograph of the Pillars of Creation in the Eagle Nebula"
-                  loading="eager"
-                  decoding="async"
-                  data-photo-image
-                />
+              <div class="hero-stack">
+                <div class="hero-stack__layer">
+                  <span>ERP Core</span>
+                  <div>
+                    <b>SAP Business One</b>
+                    <b>Odoo</b>
+                    <b>ERPNext</b>
+                  </div>
+                </div>
+                <div class="hero-stack__connector" aria-hidden="true">↓</div>
+                <div class="hero-stack__layer">
+                  <span>Connected Operations</span>
+                  <div>
+                    <b>Portals</b>
+                    <b>Mobile Apps</b>
+                    <b>APIs &amp; Commerce</b>
+                  </div>
+                </div>
+                <div class="hero-stack__connector" aria-hidden="true">↓</div>
+                <div class="hero-stack__layer hero-stack__layer--accent">
+                  <span>Intelligence &amp; Control</span>
+                  <div>
+                    <b>AI Automation</b>
+                    <b>Dashboards</b>
+                    <b>Managed Support</b>
+                  </div>
+                </div>
               </div>
+              <p class="hero-operating-system__note">Architecture, implementation, integration, custom development, deployment, and support stay connected instead of becoming separate vendor silos.</p>
             </div>
             <div class="hero-card hero-card--bottom">
               <div>
@@ -363,6 +375,15 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="trust-ribbon" aria-label="ABiT core capabilities">
+        <div class="container trust-ribbon__grid">
+          <span><strong>ERP Transformation</strong><small>Implementation, migration, optimization</small></span>
+          <span><strong>Custom Platforms</strong><small>Portals, apps, workflows, integrations</small></span>
+          <span><strong>AI &amp; Automation</strong><small>Operational agents, alerts, decision support</small></span>
+          <span><strong>Managed Operations</strong><small>Cloud, monitoring, support, continuous improvement</small></span>
         </div>
       </section>
 
@@ -991,11 +1012,10 @@
       <section class="work" id="work">
         <div class="container">
           <div class="section-header" data-reveal>
-            <p class="eyebrow">Our Work</p>
-            <h2>Trusted by teams building ambitious products.</h2>
+            <p class="eyebrow">Client Work</p>
+            <h2>Built for the operations that cannot afford to stop.</h2>
             <p class="section-lead">
-              We partner with businesses to deliver ERP implementations, modern apps, and connected
-              systems.
+              From ERP and warehouse workflows to finance approvals, logistics platforms, integrations, and managed cloud operations, our work is designed around real business execution.
             </p>
           </div>
           <div class="stats" data-reveal>
@@ -1325,6 +1345,19 @@
             <label>
               Your email
               <input type="email" name="email" placeholder="you@company.com" required />
+            </label>
+            <label>
+              What do you need?
+              <select name="service" required>
+                <option value="" selected disabled>Select a service</option>
+                <option>ERP implementation or optimization</option>
+                <option>SAP Business One development or integration</option>
+                <option>Odoo implementation or development</option>
+                <option>Custom software / portal / mobile app</option>
+                <option>AI automation or agentic operations</option>
+                <option>Cloud hosting / managed support</option>
+                <option>Other</option>
+              </select>
             </label>
             <label>
               Subject
