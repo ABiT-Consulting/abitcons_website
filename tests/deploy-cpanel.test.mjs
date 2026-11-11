@@ -112,3 +112,12 @@ test("Azure deployment discovers cPanel repository safely, without a hardcoded p
   assert.match(script, /const required = \["CPANEL_HOST", "CPANEL_USER", "CPANEL_TOKEN"\]/);
   assert.doesNotMatch(script, /CPANEL_TOKEN\s*=\s*["']/);
 });
+
+
+test("IIS website artifact normalizes platform-dependent newline sequences", () => {
+  const source = readFileSync(new URL("../scripts/build_site.mjs", import.meta.url), "utf8");
+  const artifact = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
+  assert.match(source, /stableIndexHtml/);
+  assert.doesNotMatch(artifact, /\r/);
+  assert.match(artifact, /data-engagement-explorer/);
+});

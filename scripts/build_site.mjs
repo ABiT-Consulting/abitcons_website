@@ -23,9 +23,14 @@ const html = readFileSync(distIndexPath, "utf8");
 const stylesheetAfterModuleScript =
   /(\n\s*<script type="module" crossorigin src="[^"]+\.js"><\/script>)(\n\s*<link rel="stylesheet" crossorigin href="[^"]+\.css">)/;
 const stylesheetFirstHtml = html.replace(stylesheetAfterModuleScript, "$2$1");
+// Vite can introduce CRCRLF sequences when building Windows CRLF source.
+// Normalize the release index so a Windows-generated artifact matches Linux CI.
+const stableIndexHtml = stylesheetFirstHtml.replace(/\r\r\n/g, "\n").replace(/\r\n?/g, "\n");
 
+if (stableIndexHtml !== html) {
+  writeFileSync(distIndexPath, stableIndexHtml);
+}
 if (stylesheetFirstHtml !== html) {
-  writeFileSync(distIndexPath, stylesheetFirstHtml);
   console.log("Moved production stylesheet before module script for stable first paint");
 }
 
