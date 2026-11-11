@@ -1918,3 +1918,7 @@ html.support-host #support-portal .section-header {
     grid-column: auto;
   }
 }
+
+/* Keyboard-first navigation: visible only when focused. */
+.skip-to-content { position: fixed; top: 12px; left: 12px; z-index: 10000; padding: 12px 18px; border-radius: 10px; background: #0b1b3b; color: #fff; font-weight: 700; transform: translateY(-160%); }
+.skip-to-content:focus-visible { transform: translateY(0); outline: 3px solid #f59e0b; outline-offset: 3px; }
