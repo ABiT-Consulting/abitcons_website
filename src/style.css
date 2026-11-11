@@ -141,14 +141,6 @@ main { position: relative; z-index: 1; }
   color: var(--ink);
 }
 
-/* Skip link */
-.skip-link {
-  position: absolute; left: -9999px; top: 1rem;
-  background: var(--ink); color: #fff;
-  padding: 0.5rem 1rem; border-radius: 999px;
-  z-index: 1000; font-weight: 600;
-}
-.skip-link:focus { left: 1rem; }
 
 /* Backdrop pattern (very subtle grid) */
 .backdrop {
@@ -1922,3 +1914,205 @@ html.support-host #support-portal .section-header {
 /* Keyboard-first navigation: visible only when focused. */
 .skip-to-content { position: fixed; top: 12px; left: 12px; z-index: 10000; padding: 12px 18px; border-radius: 10px; background: #0b1b3b; color: #fff; font-weight: 700; transform: translateY(-160%); }
 .skip-to-content:focus-visible { transform: translateY(0); outline: 3px solid #f59e0b; outline-offset: 3px; }
+
+
+/* Enterprise solution explorer: a concise, interactive buyer journey. */
+.engagement-explorer {
+  overflow: hidden;
+  border: 1px solid rgba(119, 149, 184, 0.28);
+  border-radius: clamp(18px, 2.5vw, 28px);
+  background: #09172c;
+  box-shadow: 0 26px 70px rgba(11, 27, 59, 0.17);
+  color: #eef4ff;
+}
+.engagement-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: rgba(189, 210, 235, 0.18);
+}
+.engagement-tabs [role="tab"] {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 0.85rem;
+  padding: clamp(1rem, 1.7vw, 1.5rem);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: #13233b;
+  color: #fff;
+  text-align: left;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.engagement-tabs [role="tab"]:hover { background: #1d3352; }
+.engagement-tabs [role="tab"][aria-selected="true"] {
+  background: #203551;
+  border-bottom-color: #ff8179;
+}
+.engagement-tabs [role="tab"]:focus-visible {
+  outline: 3px solid #71f8e0;
+  outline-offset: -5px;
+  position: relative;
+  z-index: 1;
+}
+.engagement-tab__number {
+  flex: none;
+  color: #85e6d4;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+.engagement-tabs strong {
+  display: block;
+  font: 800 clamp(1rem, 1.3vw, 1.13rem)/1.3 var(--font-display);
+}
+.engagement-tabs small {
+  display: block;
+  margin-top: 0.3rem;
+  color: #c0d2e6;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.engagement-stage { position: relative; }
+.engagement-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 38% 60% at 95% 12%, rgba(22, 181, 166, 0.12), transparent),
+              radial-gradient(ellipse 40% 65% at 4% 100%, rgba(226, 72, 63, 0.1), transparent);
+  pointer-events: none;
+}
+.engagement-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  padding: clamp(1.45rem, 4vw, 3.75rem);
+}
+.engagement-panel__eyebrow {
+  color: #8cebd9;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.engagement-panel__story h3 {
+  max-width: 24ch;
+  margin: 1rem 0 1.15rem;
+  color: #fff;
+  font: 800 clamp(1.75rem, 3.2vw, 2.9rem)/1.15 var(--font-display);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.engagement-panel__story > p {
+  max-width: 55ch;
+  margin: 0;
+  color: #d4e0ee;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.75;
+}
+.engagement-panel__capabilities { display: flex; flex-wrap: wrap; gap: 0.55rem; margin: 1.55rem 0 1.85rem; }
+.engagement-panel__capabilities span {
+  padding: 0.43rem 0.7rem;
+  border: 1px solid rgba(175, 206, 237, 0.22);
+  border-radius: 999px;
+  background: rgba(216, 234, 255, 0.08);
+  color: #ebf4ff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.engagement-panel__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.95rem 1.3rem; }
+.engagement-panel__actions .btn.primary {
+  background: #df443a;
+  color: #fff;
+  border-color: #df443a;
+  box-shadow: 0 12px 26px rgba(223, 68, 58, 0.22);
+}
+.engagement-panel__actions .btn.primary:hover { background: #ee5d54; border-color: #ee5d54; }
+.engagement-panel__text-link {
+  color: #92f2de;
+  text-decoration: underline;
+  text-underline-offset: 0.23rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.engagement-panel__text-link:hover { color: #fff; }
+.engagement-panel__text-link:focus-visible,
+.engagement-panel__actions .btn:focus-visible { outline: 3px solid #71f8e0; outline-offset: 4px; }
+.engagement-blueprint {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(189, 210, 235, 0.3);
+  border-radius: 22px;
+  background: linear-gradient(155deg, rgba(25, 54, 82, 0.95), rgba(13, 33, 57, 0.96));
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255,255,255,0.11);
+}
+.engagement-blueprint__header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid rgba(189, 210, 235, 0.2);
+  color: #c5d7ee;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.engagement-blueprint__header span:first-child { display: inline-flex; align-items: center; gap: 0.5rem; }
+.engagement-blueprint__header i {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #53e9c8;
+  box-shadow: 0 0 0 4px rgba(83, 233, 200, 0.11);
+}
+.engagement-blueprint h4 { margin: 1.5rem 1.35rem; color: #fff; font: 800 clamp(1.05rem, 1.6vw, 1.32rem)/1.4 var(--font-display); }
+.engagement-blueprint__flow { list-style: none; margin: 0 1.35rem 1.5rem; padding: 0; }
+.engagement-blueprint__flow li { display: flex; position: relative; gap: 1rem; align-items: flex-start; padding-bottom: 1.35rem; }
+.engagement-blueprint__flow li:not(:last-child)::after {
+  content: ""; position: absolute; left: 1.08rem; top: 2.32rem; bottom: 0.22rem;
+  width: 1px; background: rgba(126, 218, 208, 0.35);
+}
+.engagement-blueprint__flow li:last-child { padding-bottom: 0; }
+.engagement-blueprint__flow li > span {
+  display: inline-grid; flex: 0 0 2.2rem; height: 2.2rem; place-items: center;
+  border: 1px solid rgba(124, 228, 208, 0.42); border-radius: 11px;
+  background: rgba(33, 157, 143, 0.14); color: #a3fae9;
+  font-size: 0.74rem; font-weight: 800;
+}
+.engagement-blueprint__flow strong { display: block; margin-bottom: 0.25rem; color: #fff; font-size: 0.92rem; }
+.engagement-blueprint__flow small { display: block; color: #c6d7e9; font-size: 0.78rem; line-height: 1.55; }
+.engagement-blueprint__footer {
+  display: flex; flex-direction: column; gap: 0.35rem;
+  padding: 1.1rem 1.35rem; border-top: 1px solid rgba(189, 210, 235, 0.2);
+  background: rgba(2, 18, 36, 0.4);
+}
+.engagement-blueprint__footer span { color: #9faec4; font-size: 0.67rem; font-weight: 800; letter-spacing: 0.1em; }
+.engagement-blueprint__footer strong { color: #ecf8ff; font-size: 0.87rem; line-height: 1.4; }
+.engagement-explorer__note { margin: 0; padding: 0.1rem 1.5rem 1.3rem; color: #c4d6eb; font-size: 0.73rem; text-align: center; }
+@media (max-width: 1000px) {
+  .engagement-panel { grid-template-columns: 1fr; }
+  .engagement-panel__story h3 { max-width: 30ch; }
+}
+@media (max-width: 760px) {
+  .engagement-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .engagement-tabs [role="tab"] { padding: 0.85rem; gap: 0.6rem; min-height: 78px; }
+  .engagement-tabs small { font-size: 0.69rem; }
+  .engagement-panel { padding: 1.5rem 1.1rem; }
+  .engagement-panel__story h3 { font-size: clamp(1.65rem, 7vw, 2.2rem); }
+  .engagement-panel__actions .btn.primary { width: 100%; justify-content: center; }
+  .engagement-blueprint { border-radius: 16px; }
+}
+@media (max-width: 370px) {
+  .engagement-tabs [role="tab"] { gap: 0.4rem; padding: 0.72rem; }
+  .engagement-tabs small { font-size: 0.64rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .engagement-tabs [role="tab"] { transition: none; }
+}

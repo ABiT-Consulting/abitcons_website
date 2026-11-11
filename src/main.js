@@ -1,3 +1,4 @@
+import { initEngagementExplorer } from "./engagementExplorer.js";
 import { getSupportClientCode, getRequestedSupportClientCode, supportWorkspaceHash } from "./supportWorkspace.js";
 import { readStoredSupportUser as loadSupportUser, persistSupportUser as saveSupportUser, isCurrentSupportSession, isSupportSessionStorageEvent, createSupportSessionGuard, createSupportWorkspaceIdentityTracker, shouldEndSupportSession, isScopedSupportUser } from "./supportSession.js";
 import { isValidSupportOverview } from "./supportOverview.js";
@@ -1492,3 +1493,5 @@ if (contactForm) {
     }
   );
 }
+
+initEngagementExplorer(document.querySelector("[data-engagement-explorer]"));
